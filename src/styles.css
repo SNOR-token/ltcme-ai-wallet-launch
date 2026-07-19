@@ -144,3 +144,51 @@
   background-size: 50px 50px;
   animation: grid-move 20s linear infinite;
 }
+
+/* Pacman dot border around the page */
+.pac-border {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+.pac-border::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 18px, oklch(0.75 0.18 240 / 0.6) 18px 22px, transparent 22px 40px) top/100% 4px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 18px, oklch(0.75 0.18 240 / 0.6) 18px 22px, transparent 22px 40px) bottom/100% 4px no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 18px, oklch(0.75 0.18 240 / 0.6) 18px 22px, transparent 22px 40px) left/4px 100% no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 18px, oklch(0.75 0.18 240 / 0.6) 18px 22px, transparent 22px 40px) right/4px 100% no-repeat;
+  filter: drop-shadow(0 0 6px oklch(0.75 0.18 240 / 0.6));
+}
+
+/* Chomping pacman that runs around the perimeter */
+@keyframes chomp {
+  0%, 100% { clip-path: polygon(50% 50%, 100% 15%, 100% 85%); }
+  50% { clip-path: polygon(50% 50%, 100% 45%, 100% 55%); }
+}
+.pac-runner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: oklch(0.82 0.16 235);
+  border-radius: 50%;
+  box-shadow: 0 0 16px oklch(0.75 0.18 240 / 0.9);
+  animation: chomp 0.28s infinite, pac-loop 22s linear infinite;
+  top: 0;
+  left: 0;
+}
+@keyframes pac-loop {
+  0%   { top: 0; left: 0; transform: rotate(0deg); }
+  25%  { top: 0; left: calc(100% - 22px); transform: rotate(0deg); }
+  25.1%{ transform: rotate(90deg); }
+  50%  { top: calc(100% - 22px); left: calc(100% - 22px); transform: rotate(90deg); }
+  50.1%{ transform: rotate(180deg); }
+  75%  { top: calc(100% - 22px); left: 0; transform: rotate(180deg); }
+  75.1%{ transform: rotate(270deg); }
+  100% { top: 0; left: 0; transform: rotate(270deg); }
+}
+
