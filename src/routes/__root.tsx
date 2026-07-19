@@ -77,14 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "LTCme.click — AI-Powered Litecoin Wallet Presale" },
+      { name: "description", content: "Join the LTCme presale on Solana. An AI-driven Litecoin wallet with a built-in ghost companion, smart tools, and end-to-end guidance." },
+      { name: "author", content: "LTCme" },
+      { property: "og:title", content: "LTCme.click — AI-Powered Litecoin Wallet Presale" },
+      { property: "og:description", content: "The AI Litecoin wallet. Presale live on Solana. Countdown, tokenomics, and roadmap inside." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
