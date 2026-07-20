@@ -4,10 +4,9 @@ import {
   Sparkles, Shield, Zap, Brain, Wallet, ArrowRightLeft, LineChart,
   Lock, MessageCircle, Rocket, FileText, Coins, Users, CheckCircle2, Copy,
   Twitter, Send, Github, ExternalLink, TrendingUp, Cpu, Fingerprint, Bot,
-  Link2, Search, Bitcoin,
+  Link2, Search, Bitcoin, Wrench, Calculator, QrCode, Clock, Activity, ShieldCheck,
 } from "lucide-react";
 import pacmanMascot from "@/assets/pacman-mascot.png";
-import pacmanHero from "@/assets/pacman-hero.jpg";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
 
@@ -23,8 +22,23 @@ const RAISED_SOL = 619;
 const TARGET_SOL = 1_500;
 const SOL_DEV_WALLET = "Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy";
 const LTC_DEV_WALLET = "ltc1qr9nuxcphqdhrjheqh8c8yh9254wfncd6j9zrk4";
-const PRICE_SOL_PER_TOKEN = 0.0000015; // ~1500 SOL for 1B tokens
-const PRICE_LTC_PER_TOKEN = 0.00000009;
+
+// USD-anchored pricing so every tier maps cleanly to tokens.
+// 1 LTCme = $0.00002  →  $1 = 50,000 LTCme  ·  $100 = 5,000,000 LTCme
+const PRICE_USD_PER_TOKEN = 0.00002;
+const SOL_USD = 150; // reference price for on-page conversion
+const LTC_USD = 90;
+const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD; // ~1.33e-7
+const PRICE_LTC_PER_TOKEN = PRICE_USD_PER_TOKEN / LTC_USD; // ~2.22e-7
+
+const PRICE_TIERS = [
+  { usd: 1,   label: "Taster" },
+  { usd: 5,   label: "Snack" },
+  { usd: 10,  label: "Bite" },
+  { usd: 25,  label: "Chomper" },
+  { usd: 50,  label: "Whale-lite" },
+  { usd: 100, label: "Big Chomp" },
+];
 
 function useCountdown(target: number) {
   const [now, setNow] = useState(() => Date.now());
@@ -57,14 +71,15 @@ function WalletConnect() {
   const [open, setOpen] = useState(false);
   const [chain, setChain] = useState<Chain>("SOL");
   const [address, setAddress] = useState<string | null>(null);
-  const [amount, setAmount] = useState("0.5");
+  const [usd, setUsd] = useState(10);
   const [status, setStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const receive = chain === "SOL" ? SOL_DEV_WALLET : LTC_DEV_WALLET;
   const rate = chain === "SOL" ? PRICE_SOL_PER_TOKEN : PRICE_LTC_PER_TOKEN;
-  const parsed = parseFloat(amount) || 0;
-  const tokensOut = Math.floor(parsed / rate);
+  const chainUsd = chain === "SOL" ? SOL_USD : LTC_USD;
+  const chainAmount = usd / chainUsd;
+  const tokensOut = Math.floor(usd / PRICE_USD_PER_TOKEN);
 
   const connectPhantom = async () => {
     if (typeof window === "undefined" || !window.solana?.isPhantom) {
@@ -131,27 +146,47 @@ function WalletConnect() {
               ))}
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-xs uppercase text-muted-foreground tracking-wider">You pay ({chain})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 rounded-xl bg-input/50 border border-border font-mono text-lg focus:outline-none focus:border-primary"
-                />
+            <div className="mb-4">
+              <div className="text-xs uppercase text-muted-foreground tracking-wider mb-2">Pick your bag (USD)</div>
+              <div className="grid grid-cols-3 gap-2">
+                {PRICE_TIERS.map((t) => (
+                  <button
+                    key={t.usd}
+                    onClick={() => setUsd(t.usd)}
+                    className={`p-2 rounded-xl text-left transition border ${
+                      usd === t.usd
+                        ? "border-primary bg-gradient-to-br from-primary/25 to-secondary/25 shadow-[0_0_20px_oklch(0.75_0.18_240/0.4)]"
+                        : "border-border/60 hover:border-primary/50 glass"
+                    }`}
+                  >
+                    <div className="font-display font-black text-lg">${t.usd}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
+                    <div className="text-[11px] font-mono text-primary mt-1">
+                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCme
+                    </div>
+                  </button>
+                ))}
               </div>
+            </div>
+
+            <div className="space-y-3 mb-4">
               <div className="glass rounded-xl p-3 flex justify-between items-center">
                 <div>
-                  <div className="text-xs uppercase text-muted-foreground">You receive</div>
-                  <div className="font-mono font-bold text-xl text-gradient">{tokensOut.toLocaleString()} LTCme</div>
+                  <div className="text-xs uppercase text-muted-foreground">You pay</div>
+                  <div className="font-mono font-bold text-lg">
+                    {chainAmount.toFixed(chain === "SOL" ? 4 : 5)} {chain}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">≈ ${usd.toFixed(2)} USD</div>
                 </div>
-                <div className="text-right text-xs text-muted-foreground">
-                  Rate<br />
-                  <span className="font-mono">1 {chain} = {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme</span>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground text-right">You receive</div>
+                  <div className="font-mono font-bold text-xl text-gradient text-right">
+                    {tokensOut.toLocaleString()} LTCme
+                  </div>
                 </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground text-center font-mono">
+                Rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 {chain} ≈ {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme
               </div>
             </div>
 
@@ -222,6 +257,7 @@ function Index() {
             <a href="#about" className="hover:text-primary transition">About</a>
             <a href="#features" className="hover:text-primary transition">Features</a>
             <a href="#tokenomics" className="hover:text-primary transition">Tokenomics</a>
+            <a href="#tools" className="hover:text-primary transition">Tools</a>
             <a href="#roadmap" className="hover:text-primary transition">Roadmap</a>
             <a href="#whitepaper" className="hover:text-primary transition">Whitepaper</a>
             <a href="#ecosystem" className="hover:text-primary transition">Ecosystem</a>
@@ -279,7 +315,7 @@ function Index() {
           </div>
           <div className="relative">
             <div className="absolute -inset-8 bg-gradient-to-tr from-primary/30 to-secondary/30 blur-3xl rounded-full" />
-            <img src={pacmanHero} alt="LTCme AI pacman companion" width={1536} height={1024}
+            <img src={ghostCompanion} alt="LTCme AI pacman companion" width={1024} height={1024}
                  className="relative rounded-3xl glass p-1 shadow-[0_0_80px_oklch(0.55_0.24_295/0.4)]" />
             <img src={pacmanMascot} alt="" aria-hidden width={140} height={140}
                  className="absolute -bottom-8 -left-8 animate-float drop-shadow-[0_0_30px_oklch(0.75_0.18_240)]" />
@@ -331,18 +367,30 @@ function Index() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="glass rounded-xl p-4">
-                <div className="text-xs uppercase text-muted-foreground mb-1">Price (SOL)</div>
-                <div className="text-2xl font-bold font-mono text-gradient">1 LTCme = 0.0000015 SOL</div>
+            <div className="mb-6">
+              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL or LTC</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {PRICE_TIERS.map((t) => {
+                  const tokens = Math.floor(t.usd / PRICE_USD_PER_TOKEN);
+                  return (
+                    <a href="#presale-buy" key={t.usd}
+                       className="glass rounded-xl p-3 text-center hover:border-primary/60 transition group">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
+                      <div className="font-display font-black text-2xl text-gradient">${t.usd}</div>
+                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCme</div>
+                      <div className="text-[10px] text-muted-foreground mt-1 font-mono">
+                        {(t.usd / SOL_USD).toFixed(4)} SOL · {(t.usd / LTC_USD).toFixed(4)} LTC
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
-              <div className="glass rounded-xl p-4">
-                <div className="text-xs uppercase text-muted-foreground mb-1">Price (LTC)</div>
-                <div className="text-2xl font-bold font-mono text-gradient">1 LTCme = 0.00000009 LTC</div>
+              <div className="text-center text-xs text-muted-foreground mt-3 font-mono">
+                Fixed rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · every dollar always maps to the same token count
               </div>
             </div>
 
-            <WalletConnect />
+            <div id="presale-buy"><WalletConnect /></div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div className="glass rounded-xl p-3 text-xs">
@@ -421,33 +469,26 @@ function Index() {
 
       {/* AI COMPANION */}
       <section className="px-6 py-24">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div className="relative order-2 lg:order-1">
-            <div className="absolute -inset-6 bg-gradient-to-tr from-primary/30 to-secondary/30 blur-3xl rounded-full" />
-            <img src={ghostCompanion} alt="Pacman AI companion chatting" width={1024} height={1024} loading="lazy"
-                 className="relative rounded-3xl glass p-1" />
-          </div>
-          <div className="order-1 lg:order-2">
-            <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// AI Companion</div>
-            <h2 className="text-4xl md:text-5xl font-display font-black mb-6">Meet <span className="text-gradient">Chomp</span>. Your crypto co-pilot.</h2>
-            <div className="space-y-4">
-              {[
-                { i: MessageCircle, t: "Natural conversation", d: "Ask questions the way you would ask a friend. Chomp speaks 12 languages." },
-                { i: Sparkles, t: "Proactive nudges", d: "\"LTC fees are 40% lower than yesterday — good time to consolidate UTXOs.\"" },
-                { i: Shield, t: "Safety net", d: "Before every signature, Chomp breaks down exactly what you're approving." },
-                { i: TrendingUp, t: "Market intelligence", d: "Streams from 40+ sources: on-chain flows, news sentiment, whale movements." },
-              ].map((x) => (
-                <div key={x.t} className="flex gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                    <x.i className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">{x.t}</h4>
-                    <p className="text-sm text-muted-foreground">{x.d}</p>
-                  </div>
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// AI Companion</div>
+          <h2 className="text-4xl md:text-5xl font-display font-black mb-8">Meet <span className="text-gradient">Chomp</span>. Your crypto co-pilot.</h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-left">
+            {[
+              { i: MessageCircle, t: "Natural conversation", d: "Ask questions the way you would ask a friend. Chomp speaks 12 languages." },
+              { i: Sparkles, t: "Proactive nudges", d: "\"LTC fees are 40% lower than yesterday — good time to consolidate UTXOs.\"" },
+              { i: Shield, t: "Safety net", d: "Before every signature, Chomp breaks down exactly what you're approving." },
+              { i: TrendingUp, t: "Market intelligence", d: "Streams from 40+ sources: on-chain flows, news sentiment, whale movements." },
+            ].map((x) => (
+              <div key={x.t} className="glass rounded-2xl p-5 flex gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                  <x.i className="w-5 h-5 text-primary" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h4 className="font-semibold mb-1">{x.t}</h4>
+                  <p className="text-sm text-muted-foreground">{x.d}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -465,7 +506,7 @@ function Index() {
             {[
               { l: "Total Supply", v: "1,000,000,000", s: "LTCme · Pre-minted · Fixed forever" },
               { l: "Blockchain", v: "Solana (SPL)", s: "Buy with SOL or LTC · Sub-cent fees" },
-              { l: "Presale Price", v: "0.0000015 SOL", s: "Or 0.00000009 LTC per LTCme" },
+              { l: "Presale Price", v: "$0.00002", s: "USD per LTCme · $1 = 50,000 tokens" },
             ].map((x) => (
               <div key={x.l} className="glass rounded-2xl p-6 text-center">
                 <div className="text-xs uppercase text-muted-foreground tracking-widest">{x.l}</div>
@@ -644,6 +685,38 @@ function Index() {
                   </span>
                 </div>
               </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* LTC TOOLS */}
+      <section id="tools" className="px-6 py-24">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// Handy Tools</div>
+            <h2 className="text-4xl md:text-6xl font-display font-black">The <span className="text-gradient">LTC toolkit</span></h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Free on-chain utilities built into LTCme.Click. No signup, no tracking — every tool is one tap away inside the wallet.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { i: Calculator, t: "LTC Fee Estimator", d: "Live sat/vB fee bands (low / medium / high) with AI recommendation for your tx size." },
+              { i: ShieldCheck, t: "Address Validator", d: "Paste any Litecoin address — instantly verifies checksum, format (Legacy / SegWit / MWEB) and scam-list status." },
+              { i: QrCode, t: "QR Generator", d: "Turn any LTC address + amount + memo into a scannable payment QR for invoices and tips." },
+              { i: Clock, t: "Halving Countdown", d: "Real-time countdown to the next Litecoin halving with block-height accuracy." },
+              { i: Activity, t: "Mempool Monitor", d: "See pending tx congestion and confirmation ETA before you hit send." },
+              { i: TrendingUp, t: "LTC Price Ticker", d: "Multi-exchange spot price, 24h change, and Chomp AI sentiment score." },
+              { i: Wrench, t: "UTXO Consolidator", d: "One-click merge dust UTXOs when fees are cheapest — saves you money long-term." },
+              { i: Search, t: "Tx Lookup", d: "Paste any LTC txid to see confirmations, fee paid, and a plain-English breakdown." },
+              { i: Cpu, t: "Mining Calculator", d: "Estimate LTC rewards from your hashrate, power cost, and pool fee — updated hourly." },
+            ].map((tool) => (
+              <div key={tool.t} className="glass rounded-2xl p-6 hover:border-primary/50 transition group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mb-4 group-hover:animate-pulse-glow">
+                  <tool.i className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-display font-bold text-lg mb-2">{tool.t}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{tool.d}</p>
+              </div>
             ))}
           </div>
         </div>
