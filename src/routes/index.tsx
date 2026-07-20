@@ -4,10 +4,9 @@ import {
   Sparkles, Shield, Zap, Brain, Wallet, ArrowRightLeft, LineChart,
   Lock, MessageCircle, Rocket, FileText, Coins, Users, CheckCircle2, Copy,
   Twitter, Send, Github, ExternalLink, TrendingUp, Cpu, Fingerprint, Bot,
-  Link2, Search, Bitcoin,
+  Link2, Search, Bitcoin, Wrench, Calculator, QrCode, Clock, Activity, ShieldCheck,
 } from "lucide-react";
 import pacmanMascot from "@/assets/pacman-mascot.png";
-import pacmanHero from "@/assets/pacman-hero.jpg";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
 
@@ -23,8 +22,23 @@ const RAISED_SOL = 619;
 const TARGET_SOL = 1_500;
 const SOL_DEV_WALLET = "Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy";
 const LTC_DEV_WALLET = "ltc1qr9nuxcphqdhrjheqh8c8yh9254wfncd6j9zrk4";
-const PRICE_SOL_PER_TOKEN = 0.0000015; // ~1500 SOL for 1B tokens
-const PRICE_LTC_PER_TOKEN = 0.00000009;
+
+// USD-anchored pricing so every tier maps cleanly to tokens.
+// 1 LTCme = $0.00002  →  $1 = 50,000 LTCme  ·  $100 = 5,000,000 LTCme
+const PRICE_USD_PER_TOKEN = 0.00002;
+const SOL_USD = 150; // reference price for on-page conversion
+const LTC_USD = 90;
+const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD; // ~1.33e-7
+const PRICE_LTC_PER_TOKEN = PRICE_USD_PER_TOKEN / LTC_USD; // ~2.22e-7
+
+const PRICE_TIERS = [
+  { usd: 1,   label: "Taster" },
+  { usd: 5,   label: "Snack" },
+  { usd: 10,  label: "Bite" },
+  { usd: 25,  label: "Chomper" },
+  { usd: 50,  label: "Whale-lite" },
+  { usd: 100, label: "Big Chomp" },
+];
 
 function useCountdown(target: number) {
   const [now, setNow] = useState(() => Date.now());
