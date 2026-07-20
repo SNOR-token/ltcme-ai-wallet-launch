@@ -257,6 +257,7 @@ function Index() {
             <a href="#about" className="hover:text-primary transition">About</a>
             <a href="#features" className="hover:text-primary transition">Features</a>
             <a href="#tokenomics" className="hover:text-primary transition">Tokenomics</a>
+            <a href="#tools" className="hover:text-primary transition">Tools</a>
             <a href="#roadmap" className="hover:text-primary transition">Roadmap</a>
             <a href="#whitepaper" className="hover:text-primary transition">Whitepaper</a>
             <a href="#ecosystem" className="hover:text-primary transition">Ecosystem</a>
