@@ -505,7 +505,7 @@ function Index() {
             {[
               { l: "Total Supply", v: "1,000,000,000", s: "LTCme · Pre-minted · Fixed forever" },
               { l: "Blockchain", v: "Solana (SPL)", s: "Buy with SOL or LTC · Sub-cent fees" },
-              { l: "Presale Price", v: "0.0000015 SOL", s: "Or 0.00000009 LTC per LTCme" },
+              { l: "Presale Price", v: "$0.00002", s: "USD per LTCme · $1 = 50,000 tokens" },
             ].map((x) => (
               <div key={x.l} className="glass rounded-2xl p-6 text-center">
                 <div className="text-xs uppercase text-muted-foreground tracking-widest">{x.l}</div>
