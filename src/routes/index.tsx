@@ -435,33 +435,26 @@ function Index() {
 
       {/* AI COMPANION */}
       <section className="px-6 py-24">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div className="relative order-2 lg:order-1">
-            <div className="absolute -inset-6 bg-gradient-to-tr from-primary/30 to-secondary/30 blur-3xl rounded-full" />
-            <img src={ghostCompanion} alt="Pacman AI companion chatting" width={1024} height={1024} loading="lazy"
-                 className="relative rounded-3xl glass p-1" />
-          </div>
-          <div className="order-1 lg:order-2">
-            <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// AI Companion</div>
-            <h2 className="text-4xl md:text-5xl font-display font-black mb-6">Meet <span className="text-gradient">Chomp</span>. Your crypto co-pilot.</h2>
-            <div className="space-y-4">
-              {[
-                { i: MessageCircle, t: "Natural conversation", d: "Ask questions the way you would ask a friend. Chomp speaks 12 languages." },
-                { i: Sparkles, t: "Proactive nudges", d: "\"LTC fees are 40% lower than yesterday — good time to consolidate UTXOs.\"" },
-                { i: Shield, t: "Safety net", d: "Before every signature, Chomp breaks down exactly what you're approving." },
-                { i: TrendingUp, t: "Market intelligence", d: "Streams from 40+ sources: on-chain flows, news sentiment, whale movements." },
-              ].map((x) => (
-                <div key={x.t} className="flex gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                    <x.i className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">{x.t}</h4>
-                    <p className="text-sm text-muted-foreground">{x.d}</p>
-                  </div>
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// AI Companion</div>
+          <h2 className="text-4xl md:text-5xl font-display font-black mb-8">Meet <span className="text-gradient">Chomp</span>. Your crypto co-pilot.</h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-left">
+            {[
+              { i: MessageCircle, t: "Natural conversation", d: "Ask questions the way you would ask a friend. Chomp speaks 12 languages." },
+              { i: Sparkles, t: "Proactive nudges", d: "\"LTC fees are 40% lower than yesterday — good time to consolidate UTXOs.\"" },
+              { i: Shield, t: "Safety net", d: "Before every signature, Chomp breaks down exactly what you're approving." },
+              { i: TrendingUp, t: "Market intelligence", d: "Streams from 40+ sources: on-chain flows, news sentiment, whale movements." },
+            ].map((x) => (
+              <div key={x.t} className="glass rounded-2xl p-5 flex gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                  <x.i className="w-5 h-5 text-primary" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h4 className="font-semibold mb-1">{x.t}</h4>
+                  <p className="text-sm text-muted-foreground">{x.d}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
