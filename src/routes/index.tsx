@@ -366,18 +366,30 @@ function Index() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="glass rounded-xl p-4">
-                <div className="text-xs uppercase text-muted-foreground mb-1">Price (SOL)</div>
-                <div className="text-2xl font-bold font-mono text-gradient">1 LTCme = 0.0000015 SOL</div>
+            <div className="mb-6">
+              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL or LTC</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {PRICE_TIERS.map((t) => {
+                  const tokens = Math.floor(t.usd / PRICE_USD_PER_TOKEN);
+                  return (
+                    <a href="#presale-buy" key={t.usd}
+                       className="glass rounded-xl p-3 text-center hover:border-primary/60 transition group">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
+                      <div className="font-display font-black text-2xl text-gradient">${t.usd}</div>
+                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCme</div>
+                      <div className="text-[10px] text-muted-foreground mt-1 font-mono">
+                        {(t.usd / SOL_USD).toFixed(4)} SOL · {(t.usd / LTC_USD).toFixed(4)} LTC
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
-              <div className="glass rounded-xl p-4">
-                <div className="text-xs uppercase text-muted-foreground mb-1">Price (LTC)</div>
-                <div className="text-2xl font-bold font-mono text-gradient">1 LTCme = 0.00000009 LTC</div>
+              <div className="text-center text-xs text-muted-foreground mt-3 font-mono">
+                Fixed rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · every dollar always maps to the same token count
               </div>
             </div>
 
-            <WalletConnect />
+            <div id="presale-buy"><WalletConnect /></div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div className="glass rounded-xl p-3 text-xs">
