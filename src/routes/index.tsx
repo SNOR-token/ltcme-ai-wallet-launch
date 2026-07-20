@@ -689,6 +689,38 @@ function Index() {
         </div>
       </section>
 
+      {/* LTC TOOLS */}
+      <section id="tools" className="px-6 py-24">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// Handy Tools</div>
+            <h2 className="text-4xl md:text-6xl font-display font-black">The <span className="text-gradient">LTC toolkit</span></h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Free on-chain utilities built into LTCme.Click. No signup, no tracking — every tool is one tap away inside the wallet.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { i: Calculator, t: "LTC Fee Estimator", d: "Live sat/vB fee bands (low / medium / high) with AI recommendation for your tx size." },
+              { i: ShieldCheck, t: "Address Validator", d: "Paste any Litecoin address — instantly verifies checksum, format (Legacy / SegWit / MWEB) and scam-list status." },
+              { i: QrCode, t: "QR Generator", d: "Turn any LTC address + amount + memo into a scannable payment QR for invoices and tips." },
+              { i: Clock, t: "Halving Countdown", d: "Real-time countdown to the next Litecoin halving with block-height accuracy." },
+              { i: Activity, t: "Mempool Monitor", d: "See pending tx congestion and confirmation ETA before you hit send." },
+              { i: TrendingUp, t: "LTC Price Ticker", d: "Multi-exchange spot price, 24h change, and Chomp AI sentiment score." },
+              { i: Wrench, t: "UTXO Consolidator", d: "One-click merge dust UTXOs when fees are cheapest — saves you money long-term." },
+              { i: Search, t: "Tx Lookup", d: "Paste any LTC txid to see confirmations, fee paid, and a plain-English breakdown." },
+              { i: Cpu, t: "Mining Calculator", d: "Estimate LTC rewards from your hashrate, power cost, and pool fee — updated hourly." },
+            ].map((tool) => (
+              <div key={tool.t} className="glass rounded-2xl p-6 hover:border-primary/50 transition group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mb-4 group-hover:animate-pulse-glow">
+                  <tool.i className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-display font-bold text-lg mb-2">{tool.t}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{tool.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* HOW TO BUY */}
       <section className="px-6 py-24">
         <div className="max-w-5xl mx-auto">
