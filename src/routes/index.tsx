@@ -293,7 +293,7 @@ function Index() {
           </div>
           <div className="relative">
             <div className="absolute -inset-8 bg-gradient-to-tr from-primary/30 to-secondary/30 blur-3xl rounded-full" />
-            <img src={pacmanHero} alt="LTCme AI pacman companion" width={1536} height={1024}
+            <img src={ghostCompanion} alt="LTCme AI pacman companion" width={1024} height={1024}
                  className="relative rounded-3xl glass p-1 shadow-[0_0_80px_oklch(0.55_0.24_295/0.4)]" />
             <img src={pacmanMascot} alt="" aria-hidden width={140} height={140}
                  className="absolute -bottom-8 -left-8 animate-float drop-shadow-[0_0_30px_oklch(0.75_0.18_240)]" />
