@@ -71,14 +71,15 @@ function WalletConnect() {
   const [open, setOpen] = useState(false);
   const [chain, setChain] = useState<Chain>("SOL");
   const [address, setAddress] = useState<string | null>(null);
-  const [amount, setAmount] = useState("0.5");
+  const [usd, setUsd] = useState(10);
   const [status, setStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const receive = chain === "SOL" ? SOL_DEV_WALLET : LTC_DEV_WALLET;
   const rate = chain === "SOL" ? PRICE_SOL_PER_TOKEN : PRICE_LTC_PER_TOKEN;
-  const parsed = parseFloat(amount) || 0;
-  const tokensOut = Math.floor(parsed / rate);
+  const chainUsd = chain === "SOL" ? SOL_USD : LTC_USD;
+  const chainAmount = usd / chainUsd;
+  const tokensOut = Math.floor(usd / PRICE_USD_PER_TOKEN);
 
   const connectPhantom = async () => {
     if (typeof window === "undefined" || !window.solana?.isPhantom) {
