@@ -146,27 +146,47 @@ function WalletConnect() {
               ))}
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-xs uppercase text-muted-foreground tracking-wider">You pay ({chain})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 rounded-xl bg-input/50 border border-border font-mono text-lg focus:outline-none focus:border-primary"
-                />
+            <div className="mb-4">
+              <div className="text-xs uppercase text-muted-foreground tracking-wider mb-2">Pick your bag (USD)</div>
+              <div className="grid grid-cols-3 gap-2">
+                {PRICE_TIERS.map((t) => (
+                  <button
+                    key={t.usd}
+                    onClick={() => setUsd(t.usd)}
+                    className={`p-2 rounded-xl text-left transition border ${
+                      usd === t.usd
+                        ? "border-primary bg-gradient-to-br from-primary/25 to-secondary/25 shadow-[0_0_20px_oklch(0.75_0.18_240/0.4)]"
+                        : "border-border/60 hover:border-primary/50 glass"
+                    }`}
+                  >
+                    <div className="font-display font-black text-lg">${t.usd}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
+                    <div className="text-[11px] font-mono text-primary mt-1">
+                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCme
+                    </div>
+                  </button>
+                ))}
               </div>
+            </div>
+
+            <div className="space-y-3 mb-4">
               <div className="glass rounded-xl p-3 flex justify-between items-center">
                 <div>
-                  <div className="text-xs uppercase text-muted-foreground">You receive</div>
-                  <div className="font-mono font-bold text-xl text-gradient">{tokensOut.toLocaleString()} LTCme</div>
+                  <div className="text-xs uppercase text-muted-foreground">You pay</div>
+                  <div className="font-mono font-bold text-lg">
+                    {chainAmount.toFixed(chain === "SOL" ? 4 : 5)} {chain}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">≈ ${usd.toFixed(2)} USD</div>
                 </div>
-                <div className="text-right text-xs text-muted-foreground">
-                  Rate<br />
-                  <span className="font-mono">1 {chain} = {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme</span>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground text-right">You receive</div>
+                  <div className="font-mono font-bold text-xl text-gradient text-right">
+                    {tokensOut.toLocaleString()} LTCme
+                  </div>
                 </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground text-center font-mono">
+                Rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 {chain} ≈ {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme
               </div>
             </div>
 
