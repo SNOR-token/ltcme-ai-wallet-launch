@@ -728,13 +728,13 @@ function Index() {
           <div className="text-center mb-14">
             <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// How to buy</div>
             <h2 className="text-4xl md:text-6xl font-display font-black">Buy in <span className="text-gradient">3 steps</span></h2>
-            <p className="text-muted-foreground mt-3">Tokens are pre-minted. Delivery is instant.</p>
+            <p className="text-muted-foreground mt-3">Distribution is manual and processed by the team after presale close.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { n: "1", t: "Connect a wallet", d: "Click Connect Wallet. Choose Solana (Phantom / Solflare / Backpack) or pay with Litecoin from any LTC wallet." },
-              { n: "2", t: "Choose amount", d: "Enter how much SOL or LTC you want to spend. See your exact LTCme allocation instantly at the presale rate." },
-              { n: "3", t: "Receive LTCme instantly", d: "The moment your payment confirms on-chain, our dev wallet auto-signs and airdrops your LTCme SPL tokens. No waiting, no claim." },
+              { n: "2", t: "Choose amount & send", d: "Pick a tier, send SOL to the presale Solana address or LTC to the LTC address. Save your transaction hash — it's your proof of payment." },
+              { n: "3", t: "Receive LTCme after presale", d: "Submit your tx hash and the Solana address to receive LTCme. After presale close, the team verifies payments on-chain and distributes your allocation." },
             ].map((s) => (
               <div key={s.n} className="glass rounded-2xl p-6 relative">
                 <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-display font-black text-primary-foreground shadow-[0_0_20px_oklch(0.75_0.18_240)]">
