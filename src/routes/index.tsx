@@ -226,7 +226,7 @@ function WalletConnect() {
             )}
 
             <div className="text-[11px] text-muted-foreground leading-relaxed">
-              ⚡ <span className="text-primary font-semibold">Instant delivery:</span> the dev wallet auto-signs and airdrops LTCme SPL tokens the moment your tx confirms on-chain. No 24h wait, no claim step.
+              ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> This is a manual presale. There is no on-chain escrow or automated contract that atomically swaps your payment for LTCme. Payments are reviewed and allocations distributed by the team after presale close. Keep your tx hash as proof of payment. Only send what you can afford to lose.
             </div>
           </div>
         </div>
