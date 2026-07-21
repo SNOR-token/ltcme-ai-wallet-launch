@@ -756,7 +756,7 @@ function Index() {
               { i: Shield, t: "Audited", d: "SPL contract audits by two independent firms" },
               { i: Lock, t: "Liquidity Locked", d: "24-month on-chain time-lock, verifiable" },
               { i: Users, t: "Doxxed Team", d: "Core team KYC'd via a public verifier" },
-              { i: Zap, t: "Instant Delivery", d: "Pre-minted tokens, no vesting on presale buys" },
+              { i: Zap, t: "Transparent Distribution", d: "Payments verifiable on-chain; allocations distributed post-presale" },
             ].map((x) => (
               <div key={x.t}>
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mx-auto mb-3">
