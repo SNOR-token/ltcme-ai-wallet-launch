@@ -394,7 +394,7 @@ function Index() {
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div className="glass rounded-xl p-3 text-xs">
-                <div className="uppercase text-muted-foreground tracking-widest mb-1">SOL dev wallet (delivery source)</div>
+                <div className="uppercase text-muted-foreground tracking-widest mb-1">SOL presale receive wallet</div>
                 <div className="font-mono truncate">{SOL_DEV_WALLET}</div>
               </div>
               <div className="glass rounded-xl p-3 text-xs">
@@ -403,7 +403,7 @@ function Index() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              ⚡ 1,000,000,000 LTCme SPL tokens are pre-minted in our Solana dev wallet. The moment your payment (SOL or LTC) confirms on-chain, the dev wallet auto-signs and airdrops your allocation. No claim step, no lockup on presale allocation.
+              ⚠️ This is a manual, off-chain presale. There is no smart contract or escrow atomically swapping payment for tokens. After presale close, the team reviews on-chain payments and distributes LTCme allocations to buyers' provided Solana addresses. Keep your tx hash as proof of payment. Only participate with funds you can afford to lose.
             </p>
           </div>
         </div>
