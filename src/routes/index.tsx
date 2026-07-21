@@ -9,6 +9,8 @@ import {
 import pacmanMascot from "@/assets/pacman-mascot.png";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
+import { LTCTools } from "@/components/ltc-tools";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
