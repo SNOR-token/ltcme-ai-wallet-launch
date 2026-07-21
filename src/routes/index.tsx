@@ -127,7 +127,7 @@ function WalletConnect() {
             </button>
             <h3 className="font-display font-black text-2xl mb-1">Buy LTCme</h3>
             <p className="text-xs text-muted-foreground mb-5">
-              Tokens are already minted and airdrop <span className="text-primary font-semibold">instantly</span> from our dev wallet the moment your payment confirms.
+              Presale is a <span className="text-primary font-semibold">manual, off-chain</span> process. Payments are reviewed after presale close and token allocations are distributed by the team. No smart contract, escrow, or automated delivery is in place — participate only with funds you can afford to lose.
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-5 p-1 glass rounded-xl">
