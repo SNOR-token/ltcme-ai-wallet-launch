@@ -576,7 +576,7 @@ function Index() {
             <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-secondary to-transparent" />
             {[
               { q: "Q2 2026", t: "Token Mint + Wallet Beta", d: "1B LTCme SPL minted on Solana. iOS + Android + Chrome extension beta live with Chomp AI v1.", done: true },
-              { q: "Q3 2026", t: "Presale + Instant Delivery", d: "Public presale opens — buy with SOL or LTC, tokens deliver instantly from dev wallet. Community push to 25k across X + Telegram.", done: true },
+              { q: "Q3 2026", t: "Presale (Manual Distribution)", d: "Public presale opens — buy with SOL or LTC. Payments are reviewed by the team and LTCme allocations are distributed after presale close. Community push to 25k across X + Telegram.", done: true },
               { q: "Q4 2026", t: "DEX Launch + CEX Listings", d: "LTCme lists on Raydium & Jupiter. Liquidity locked for 24 months. Tier-2 CEX listings. Staking goes live.", done: false },
               { q: "Q1 2027", t: "Full Wallet Launch", d: "Cross-chain swaps, hardware wallet support, .ltc handles, voice commands, biometric flows." },
               { q: "Q2 2027", t: "Chomp AI v2 + DAO", d: "Proactive portfolio management, DeFi strategy engine, LTCme DAO governance goes live." },
