@@ -290,7 +290,7 @@ function Index() {
             </p>
             <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
               An AI-driven Litecoin wallet with a light-blue pacman AI companion guiding every move.
-              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens already minted on Solana — buy with SOL or LTC and receive tokens instantly.
+              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens minted on Solana — presale accepts SOL or LTC, with allocations distributed manually by the team after presale close.
             </p>
             <div className="flex flex-wrap gap-4">
               <a href="#presale" className="px-6 py-3.5 rounded-full font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.5)] hover:scale-105 transition">
