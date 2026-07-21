@@ -200,7 +200,7 @@ function WalletConnect() {
               </button>
             ) : (
               <div className="text-xs text-muted-foreground mb-3">
-                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). Tokens deliver to a Solana address you provide below.
+                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). After sending, submit your tx hash and the Solana address for your allocation — distributions are processed manually after presale close.
               </div>
             )}
 
