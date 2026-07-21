@@ -14,7 +14,32 @@ import { LTCTools } from "@/components/ltc-tools";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
+      { name: "description", content: "LTCme.Click is an AI-driven Litecoin wallet with live mainnet tools, a Pac-Man companion, and an active presale. Buy LTCme with SOL or LTC — pre-minted supply, manual distribution after close." },
+      { property: "og:title", content: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
+      { property: "og:description", content: "AI-driven Litecoin wallet + presale on Solana & Litecoin. Live LTC mainnet tools built in: fee estimator, mempool, halving countdown, tx lookup, mining calc." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://ltcme.click/" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "LTCme.Click Wallet — Agentic AI Litecoin Wallet" },
+      { name: "twitter:description", content: "AI-driven Litecoin wallet with live mainnet tools and an active presale." },
+    ],
+    links: [{ rel: "canonical", href: "https://ltcme.click/" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "LTCme.Click Wallet",
+        url: "https://ltcme.click/",
+        description: "Agentic AI-powered Litecoin wallet with live mainnet tools and presale.",
+      }),
+    }],
+  }),
 });
+
 
 // Presale ends in 10 days — tokens are manually distributed after presale close
 const PRESALE_END = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).getTime();
