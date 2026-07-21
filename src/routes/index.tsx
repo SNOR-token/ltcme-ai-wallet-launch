@@ -331,10 +331,10 @@ function Index() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <Rocket className="w-5 h-5 text-primary" />
-              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Instant Delivery</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Manual Distribution</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-display font-black mb-2">Ends in</h2>
-            <p className="text-sm text-muted-foreground mb-8">Tokens are already minted. Buy now, receive instantly — no 24h wait.</p>
+            <p className="text-sm text-muted-foreground mb-8">Tokens are minted. Payments are reviewed and allocations distributed by the team after presale close — no on-chain escrow, participate only with funds you can afford to lose.</p>
 
             <div className="grid grid-cols-4 gap-3 md:gap-6 mb-10">
               {[
