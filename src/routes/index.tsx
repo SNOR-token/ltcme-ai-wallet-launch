@@ -89,7 +89,7 @@ function WalletConnect() {
     try {
       const r = await window.solana.connect();
       setAddress(r.publicKey.toString());
-      setStatus("Connected. Tokens deliver instantly to this wallet on confirmation.");
+      setStatus("Wallet connected. Record this address — after you send payment, submit your tx hash via our claim form so we can verify and distribute your allocation after presale close.");
     } catch {
       setStatus("Connection cancelled.");
     }
