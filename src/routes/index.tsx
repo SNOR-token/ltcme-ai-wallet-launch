@@ -521,7 +521,7 @@ function Index() {
               <h3 className="font-display font-bold text-2xl mb-6 flex items-center gap-2"><Coins className="w-5 h-5 text-primary" /> Distribution</h3>
               <div className="space-y-4">
                 {[
-                  { l: "Presale (instant delivery)", p: 40 },
+                  { l: "Presale (manual distribution)", p: 40 },
                   { l: "Liquidity Pool (locked 2y)", p: 20 },
                   { l: "Ecosystem & Rewards", p: 15 },
                   { l: "Team (24mo vest, 6mo cliff)", p: 12 },
