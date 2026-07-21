@@ -806,7 +806,7 @@ function Index() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/20" />
           <img src={pacmanMascot} alt="" aria-hidden width={120} height={120} className="mx-auto mb-6 animate-float relative" />
           <h2 className="relative text-4xl md:text-5xl font-display font-black mb-4">Ready to hold <span className="text-gradient">LTCme</span>?</h2>
-          <p className="relative text-muted-foreground mb-8 max-w-xl mx-auto">Chomp your way into the future of Agentic Crypto Management. Instant delivery, dual-chain payments, one iconic pacman.</p>
+          <p className="relative text-muted-foreground mb-8 max-w-xl mx-auto">Chomp your way into the future of Agentic Crypto Management. Dual-chain payments, transparent post-presale distribution, one iconic pacman.</p>
           <a href="#presale" className="relative inline-block px-8 py-4 rounded-full font-bold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_60px_oklch(0.65_0.25_295/0.6)] hover:scale-105 transition">
             Join the Presale
           </a>
