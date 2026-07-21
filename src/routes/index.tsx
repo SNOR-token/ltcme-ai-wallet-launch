@@ -304,7 +304,7 @@ function Index() {
               {[
                 { v: "1B", l: "Tokens minted" },
                 { v: "SOL+LTC", l: "Accepted" },
-                { v: "Instant", l: "Delivery" },
+                { v: "Manual", l: "Distribution" },
               ].map((x) => (
                 <div key={x.l}>
                   <div className="text-2xl font-display font-bold text-gradient">{x.v}</div>
