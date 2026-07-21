@@ -14,7 +14,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-// Presale ends in 10 days — tokens already minted, delivered instantly on buy
+// Presale ends in 10 days — tokens are manually distributed after presale close
 const PRESALE_END = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).getTime();
 const PRESALE_ALLOCATION = 1_000_000_000; // 1B tokens minted
 const SOLD = 412_800_000;
