@@ -9,10 +9,37 @@ import {
 import pacmanMascot from "@/assets/pacman-mascot.png";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
+import { LTCTools } from "@/components/ltc-tools";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
+      { name: "description", content: "LTCme.Click is an AI-driven Litecoin wallet with live mainnet tools, a Pac-Man companion, and an active presale. Buy LTCme with SOL or LTC — pre-minted supply, manual distribution after close." },
+      { property: "og:title", content: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
+      { property: "og:description", content: "AI-driven Litecoin wallet + presale on Solana & Litecoin. Live LTC mainnet tools built in: fee estimator, mempool, halving countdown, tx lookup, mining calc." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://ltcme.click/" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "LTCme.Click Wallet — Agentic AI Litecoin Wallet" },
+      { name: "twitter:description", content: "AI-driven Litecoin wallet with live mainnet tools and an active presale." },
+    ],
+    links: [{ rel: "canonical", href: "https://ltcme.click/" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "LTCme.Click Wallet",
+        url: "https://ltcme.click/",
+        description: "Agentic AI-powered Litecoin wallet with live mainnet tools and presale.",
+      }),
+    }],
+  }),
 });
+
 
 // Presale ends in 10 days — tokens are manually distributed after presale close
 const PRESALE_END = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).getTime();
@@ -698,27 +725,8 @@ function Index() {
             <h2 className="text-4xl md:text-6xl font-display font-black">The <span className="text-gradient">LTC toolkit</span></h2>
             <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Free on-chain utilities built into LTCme.Click. No signup, no tracking — every tool is one tap away inside the wallet.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { i: Calculator, t: "LTC Fee Estimator", d: "Live sat/vB fee bands (low / medium / high) with AI recommendation for your tx size." },
-              { i: ShieldCheck, t: "Address Validator", d: "Paste any Litecoin address — instantly verifies checksum, format (Legacy / SegWit / MWEB) and scam-list status." },
-              { i: QrCode, t: "QR Generator", d: "Turn any LTC address + amount + memo into a scannable payment QR for invoices and tips." },
-              { i: Clock, t: "Halving Countdown", d: "Real-time countdown to the next Litecoin halving with block-height accuracy." },
-              { i: Activity, t: "Mempool Monitor", d: "See pending tx congestion and confirmation ETA before you hit send." },
-              { i: TrendingUp, t: "LTC Price Ticker", d: "Multi-exchange spot price, 24h change, and Chomp AI sentiment score." },
-              { i: Wrench, t: "UTXO Consolidator", d: "One-click merge dust UTXOs when fees are cheapest — saves you money long-term." },
-              { i: Search, t: "Tx Lookup", d: "Paste any LTC txid to see confirmations, fee paid, and a plain-English breakdown." },
-              { i: Cpu, t: "Mining Calculator", d: "Estimate LTC rewards from your hashrate, power cost, and pool fee — updated hourly." },
-            ].map((tool) => (
-              <div key={tool.t} className="glass rounded-2xl p-6 hover:border-primary/50 transition group">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mb-4 group-hover:animate-pulse-glow">
-                  <tool.i className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-display font-bold text-lg mb-2">{tool.t}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{tool.d}</p>
-              </div>
-            ))}
-          </div>
+          <LTCTools />
+
         </div>
       </section>
 
