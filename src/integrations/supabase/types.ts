@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      presale_purchases: {
+        Row: {
+          amount_native: number
+          amount_usd: number
+          chain: string
+          created_at: string
+          delivery_tx: string | null
+          error: string | null
+          id: string
+          payer_address: string | null
+          recipient_solana_address: string
+          status: string
+          tokens: number
+          tx_hash: string
+          updated_at: string
+        }
+        Insert: {
+          amount_native?: number
+          amount_usd?: number
+          chain: string
+          created_at?: string
+          delivery_tx?: string | null
+          error?: string | null
+          id?: string
+          payer_address?: string | null
+          recipient_solana_address: string
+          status?: string
+          tokens?: number
+          tx_hash: string
+          updated_at?: string
+        }
+        Update: {
+          amount_native?: number
+          amount_usd?: number
+          chain?: string
+          created_at?: string
+          delivery_tx?: string | null
+          error?: string | null
+          id?: string
+          payer_address?: string | null
+          recipient_solana_address?: string
+          status?: string
+          tokens?: number
+          tx_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
