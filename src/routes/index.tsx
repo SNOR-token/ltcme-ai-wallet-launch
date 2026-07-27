@@ -10,6 +10,7 @@ import pacmanMascot from "@/assets/pacman-mascot.png";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
 import { LTCTools } from "@/components/ltc-tools";
+import { PaymentVerifier } from "@/components/payment-verifier";
 
 
 export const Route = createFileRoute("/")({
@@ -252,6 +253,10 @@ function WalletConnect() {
               </div>
             )}
 
+            <div className="mb-3">
+              <PaymentVerifier chain={chain} defaultRecipient={address ?? ""} compact />
+            </div>
+
             <div className="text-[11px] text-muted-foreground leading-relaxed">
               ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> Payment and delivery are two separate on-chain steps: you send funds, our verifier confirms the transaction, then the treasury sends your LTCme automatically. There is no atomic escrow contract, so always keep your tx hash. Only send what you can afford to lose.
             </div>
@@ -418,6 +423,11 @@ function Index() {
             </div>
 
             <div id="presale-buy"><WalletConnect /></div>
+
+            <div className="grid md:grid-cols-2 gap-3 mt-4">
+              <PaymentVerifier chain="SOL" />
+              <PaymentVerifier chain="LTC" />
+            </div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div className="glass rounded-xl p-3 text-xs">
