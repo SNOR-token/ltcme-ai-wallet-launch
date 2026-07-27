@@ -10,6 +10,7 @@ import pacmanMascot from "@/assets/pacman-mascot.png";
 import aiOrb from "@/assets/ai-orb.jpg";
 import ghostCompanion from "@/assets/ghost-companion.jpg";
 import { LTCTools } from "@/components/ltc-tools";
+import { PaymentVerifier } from "@/components/payment-verifier";
 
 
 export const Route = createFileRoute("/")({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
-      { name: "description", content: "LTCme.Click is an AI-driven Litecoin wallet with live mainnet tools, a Pac-Man companion, and an active presale. Buy LTCme with SOL or LTC — pre-minted supply, manual distribution after close." },
+      { name: "description", content: "LTCme.Click is an AI-driven Litecoin wallet with live mainnet tools, a Pac-Man companion, and an active presale. Buy LTCme with SOL or LTC — pre-minted supply, instant token delivery on verified payment." },
       { property: "og:title", content: "LTCme.Click Wallet — Agentic AI Litecoin Wallet & Presale" },
       { property: "og:description", content: "AI-driven Litecoin wallet + presale on Solana & Litecoin. Live LTC mainnet tools built in: fee estimator, mempool, halving countdown, tx lookup, mining calc." },
       { property: "og:type", content: "website" },
@@ -41,8 +42,8 @@ export const Route = createFileRoute("/")({
 });
 
 
-// Presale ends in 10 days — tokens are manually distributed after presale close
-const PRESALE_END = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).getTime();
+// Presale closes at a fixed moment — countdown ticks down to the second.
+const PRESALE_END = new Date("2026-08-06T00:00:00Z").getTime();
 const PRESALE_ALLOCATION = 1_000_000_000; // 1B tokens minted
 const SOLD = 412_800_000;
 const RAISED_SOL = 619;
@@ -116,7 +117,7 @@ function WalletConnect() {
     try {
       const r = await window.solana.connect();
       setAddress(r.publicKey.toString());
-      setStatus("Wallet connected. Record this address — after you send payment, submit your tx hash via our claim form so we can verify and distribute your allocation after presale close.");
+      setStatus("Wallet connected. Send your payment, then paste the transaction hash below — verification triggers an instant on-chain transfer of your LTCme.");
     } catch {
       setStatus("Connection cancelled.");
     }
@@ -154,7 +155,7 @@ function WalletConnect() {
             </button>
             <h3 className="font-display font-black text-2xl mb-1">Buy LTCme</h3>
             <p className="text-xs text-muted-foreground mb-5">
-              Presale is a <span className="text-primary font-semibold">manual, off-chain</span> process. Payments are reviewed after presale close and token allocations are distributed by the team. No smart contract, escrow, or automated delivery is in place — participate only with funds you can afford to lose.
+              Pay in SOL or LTC, paste your transaction hash, and our verifier checks it on-chain. On success your LTCme is <span className="text-primary font-semibold">transferred instantly</span> from the token treasury — no waiting for launch. Crypto is volatile; only spend what you can afford to lose.
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-5 p-1 glass rounded-xl">
@@ -227,7 +228,7 @@ function WalletConnect() {
               </button>
             ) : (
               <div className="text-xs text-muted-foreground mb-3">
-                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). After sending, submit your tx hash and the Solana address for your allocation — distributions are processed manually after presale close.
+                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). Once the payment has one confirmation, paste the tx hash below with your Solana address — tokens are sent to you immediately after verification.
               </div>
             )}
 
@@ -252,8 +253,12 @@ function WalletConnect() {
               </div>
             )}
 
+            <div className="mb-3">
+              <PaymentVerifier chain={chain} defaultRecipient={address ?? ""} compact />
+            </div>
+
             <div className="text-[11px] text-muted-foreground leading-relaxed">
-              ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> This is a manual presale. There is no on-chain escrow or automated contract that atomically swaps your payment for LTCme. Payments are reviewed and allocations distributed by the team after presale close. Keep your tx hash as proof of payment. Only send what you can afford to lose.
+              ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> Payment and delivery are two separate on-chain steps: you send funds, our verifier confirms the transaction, then the treasury sends your LTCme automatically. There is no atomic escrow contract, so always keep your tx hash. Only send what you can afford to lose.
             </div>
           </div>
         </div>
@@ -317,7 +322,7 @@ function Index() {
             </p>
             <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
               An AI-driven Litecoin wallet with a light-blue pacman AI companion guiding every move.
-              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens minted on Solana — presale accepts SOL or LTC, with allocations distributed manually by the team after presale close.
+              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens already minted on Solana — pay with SOL or LTC and get your tokens instantly on payment verification, no waiting for launch.
             </p>
             <div className="flex flex-wrap gap-4">
               <a href="#presale" className="px-6 py-3.5 rounded-full font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.5)] hover:scale-105 transition">
@@ -331,7 +336,7 @@ function Index() {
               {[
                 { v: "1B", l: "Tokens minted" },
                 { v: "SOL+LTC", l: "Accepted" },
-                { v: "Manual", l: "Distribution" },
+                { v: "Instant", l: "Delivery" },
               ].map((x) => (
                 <div key={x.l}>
                   <div className="text-2xl font-display font-bold text-gradient">{x.v}</div>
@@ -358,10 +363,10 @@ function Index() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <Rocket className="w-5 h-5 text-primary" />
-              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Manual Distribution</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Instant Delivery</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-display font-black mb-2">Ends in</h2>
-            <p className="text-sm text-muted-foreground mb-8">Tokens are minted. Payments are reviewed and allocations distributed by the team after presale close — no on-chain escrow, participate only with funds you can afford to lose.</p>
+            <p className="text-sm text-muted-foreground mb-8">Tokens are already minted and held in the treasury wallet. Verify your payment and LTCme lands in your wallet within seconds — no waiting for launch.</p>
 
             <div className="grid grid-cols-4 gap-3 md:gap-6 mb-10">
               {[
@@ -420,6 +425,11 @@ function Index() {
             <div id="presale-buy"><WalletConnect /></div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">
+              <PaymentVerifier chain="SOL" />
+              <PaymentVerifier chain="LTC" />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3 mt-4">
               <div className="glass rounded-xl p-3 text-xs">
                 <div className="uppercase text-muted-foreground tracking-widest mb-1">SOL presale receive wallet</div>
                 <div className="font-mono truncate">{SOL_DEV_WALLET}</div>
@@ -430,7 +440,7 @@ function Index() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              ⚠️ This is a manual, off-chain presale. There is no smart contract or escrow atomically swapping payment for tokens. After presale close, the team reviews on-chain payments and distributes LTCme allocations to buyers' provided Solana addresses. Keep your tx hash as proof of payment. Only participate with funds you can afford to lose.
+              ⚠️ Delivery is automated but not atomic: you pay, our backend verifier confirms the transaction on-chain, then the treasury wallet transfers your LTCme to the Solana address you provide. Keep your tx hash — it is your proof of payment and can be re-verified at any time. Only participate with funds you can afford to lose.
             </p>
           </div>
         </div>
@@ -548,7 +558,7 @@ function Index() {
               <h3 className="font-display font-bold text-2xl mb-6 flex items-center gap-2"><Coins className="w-5 h-5 text-primary" /> Distribution</h3>
               <div className="space-y-4">
                 {[
-                  { l: "Presale (manual distribution)", p: 40 },
+                  { l: "Presale (instant delivery)", p: 40 },
                   { l: "Liquidity Pool (locked 2y)", p: 20 },
                   { l: "Ecosystem & Rewards", p: 15 },
                   { l: "Team (24mo vest, 6mo cliff)", p: 12 },
@@ -603,7 +613,7 @@ function Index() {
             <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-secondary to-transparent" />
             {[
               { q: "Q2 2026", t: "Token Mint + Wallet Beta", d: "1B LTCme SPL minted on Solana. iOS + Android + Chrome extension beta live with Chomp AI v1.", done: true },
-              { q: "Q3 2026", t: "Presale (Manual Distribution)", d: "Public presale opens — buy with SOL or LTC. Payments are reviewed by the team and LTCme allocations are distributed after presale close. Community push to 25k across X + Telegram.", done: true },
+              { q: "Q3 2026", t: "Presale (Instant Delivery)", d: "Public presale opens — buy with SOL or LTC. Every payment is verified on-chain and LTCme is transferred from the treasury wallet immediately. Community push to 25k across X + Telegram.", done: true },
               { q: "Q4 2026", t: "DEX Launch + CEX Listings", d: "LTCme lists on Raydium & Jupiter. Liquidity locked for 24 months. Tier-2 CEX listings. Staking goes live.", done: false },
               { q: "Q1 2027", t: "Full Wallet Launch", d: "Cross-chain swaps, hardware wallet support, .ltc handles, voice commands, biometric flows." },
               { q: "Q2 2027", t: "Chomp AI v2 + DAO", d: "Proactive portfolio management, DeFi strategy engine, LTCme DAO governance goes live." },
@@ -639,8 +649,8 @@ function Index() {
               { n: "01", t: "Problem", d: "Crypto wallets remain hostile to newcomers. Interfaces are technical, mistakes are permanent, and users have no trusted guide. Meanwhile, mobile-first users demand conversational, intelligent software." },
               { n: "02", t: "Solution", d: "LTCme.Click combines a hardened non-custodial Litecoin wallet with an embedded pacman AI companion trained on crypto operations, on-chain data, and user-education material. Chomp translates intent into safe actions." },
               { n: "03", t: "Architecture", d: "Client-side key management (BIP-39 + BIP-84 native SegWit). Chomp runs a hybrid model: on-device inference for privacy-sensitive queries, edge inference for market data. Zero telemetry by default." },
-              { n: "04", t: "Solana Presale Layer", d: "LTCme is an SPL token used for governance, fee discounts, and rewards. 1B tokens are minted on Solana and held in a public team wallet. Presale is off-chain: the team reviews incoming SOL/LTC payments and distributes allocations to buyers after presale close." },
-              { n: "05", t: "Dual-Chain Payments", d: "Pay with SOL (Phantom / Solflare / Backpack) or LTC (any Litecoin wallet). Payments are recorded on-chain and matched to your submitted Solana receive address. Distribution is manual and performed by the team — there is no smart contract that atomically swaps payment for tokens." },
+              { n: "04", t: "Solana Presale Layer", d: "LTCme is an SPL token used for governance, fee discounts, and rewards. 1B tokens are minted on Solana and held in a public team wallet. Presale delivery is automated: incoming SOL/LTC payments are verified on-chain and LTCme is transferred to the buyer instantly." },
+              { n: "05", t: "Dual-Chain Payments", d: "Pay with SOL (Phantom / Solflare / Backpack) or LTC (any Litecoin wallet). Payments are verified on-chain against the treasury wallet and matched to your submitted Solana receive address, which then receives LTCme automatically. Delivery is automatic but not atomic — always keep your tx hash." },
               { n: "06", t: "Security & Governance", d: "Two independent audits, a $250k bug bounty at launch, and multi-sig treasury. Liquidity locked 24 months. Team tokens vest linearly over 24 months with a 6-month cliff. Post-launch DAO governs new features, chains, and fee routing." },
             ].map((s) => (
               <div key={s.n} className="glass rounded-2xl p-6 hover:border-primary/50 transition">
@@ -736,13 +746,13 @@ function Index() {
           <div className="text-center mb-14">
             <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// How to buy</div>
             <h2 className="text-4xl md:text-6xl font-display font-black">Buy in <span className="text-gradient">3 steps</span></h2>
-            <p className="text-muted-foreground mt-3">Distribution is manual and processed by the team after presale close.</p>
+            <p className="text-muted-foreground mt-3">Verification triggers delivery instantly — tokens hit your wallet in seconds.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { n: "1", t: "Connect a wallet", d: "Click Connect Wallet. Choose Solana (Phantom / Solflare / Backpack) or pay with Litecoin from any LTC wallet." },
               { n: "2", t: "Choose amount & send", d: "Pick a tier, send SOL to the presale Solana address or LTC to the LTC address. Save your transaction hash — it's your proof of payment." },
-              { n: "3", t: "Receive LTCme after presale", d: "Submit your tx hash and the Solana address to receive LTCme. After presale close, the team verifies payments on-chain and distributes your allocation." },
+              { n: "3", t: "Verify & receive instantly", d: "Paste your tx hash and Solana address into the verifier. Once the payment is confirmed on-chain, the treasury sends your LTCme immediately — no waiting for launch." },
             ].map((s) => (
               <div key={s.n} className="glass rounded-2xl p-6 relative">
                 <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-display font-black text-primary-foreground shadow-[0_0_20px_oklch(0.75_0.18_240)]">
@@ -764,7 +774,7 @@ function Index() {
               { i: Shield, t: "Audited", d: "SPL contract audits by two independent firms" },
               { i: Lock, t: "Liquidity Locked", d: "24-month on-chain time-lock, verifiable" },
               { i: Users, t: "Doxxed Team", d: "Core team KYC'd via a public verifier" },
-              { i: Zap, t: "Transparent Distribution", d: "Payments verifiable on-chain; allocations distributed post-presale" },
+              { i: Zap, t: "Instant Delivery", d: "Verified payments trigger an immediate on-chain LTCme transfer" },
             ].map((x) => (
               <div key={x.t}>
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mx-auto mb-3">
@@ -787,8 +797,8 @@ function Index() {
           </div>
           <div className="space-y-3">
             {[
-              { q: "How and when are tokens distributed?", a: "This is a manual, off-chain presale. There is no smart contract or escrow that atomically swaps your payment for LTCme. All 1,000,000,000 LTCme SPL tokens are minted on Solana and held in a public team wallet — verifiable on any Solana explorer. After presale closes, the team reviews on-chain SOL and LTC payments and distributes allocations to the Solana receive address each buyer provides. Always keep your transaction hash as proof of payment." },
-              { q: "Can I really pay with Litecoin?", a: "Yes. Send LTC to our LTC receive address (visible in the Buy modal and on the presale card). Save your tx hash and submit it with the Solana address you want LTCme distributed to after presale close." },
+              { q: "How and when are tokens delivered?", a: "Immediately. All 1,000,000,000 LTCme SPL tokens are already minted on Solana and held in the treasury wallet Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy — verifiable on any Solana explorer. After you pay, paste your transaction hash into the verifier. Our backend confirms the payment landed in the treasury wallet, calculates your allocation at the live rate, and transfers LTCme to your Solana address within seconds. Delivery is automatic but not atomic, so always keep your tx hash — a payment can be re-verified at any time." },
+              { q: "Can I really pay with Litecoin?", a: "Yes. Send LTC to our LTC receive address (visible in the Buy modal and on the presale card). Once it has one confirmation, submit the tx hash plus the Solana address you want LTCme sent to — delivery happens right away." },
               { q: "Why is the token on Solana if this is a Litecoin wallet?", a: "Solana offers sub-cent fees, near-instant finality, and a mature SPL ecosystem — perfect for a smooth presale and DEX launch. The wallet itself is Litecoin-native; LTCme lives on Solana as the utility & governance layer." },
               { q: "Is the wallet custodial?", a: "No. LTCme.Click Wallet is fully non-custodial. Your seed phrase is generated and stored on your device. We can never access your funds." },
               { q: "Does the AI companion see my private keys?", a: "Never. Chomp operates on public on-chain data and your explicit prompts. Signature-requiring actions always require your device-level biometric confirmation." },
@@ -814,7 +824,7 @@ function Index() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/20" />
           <img src={pacmanMascot} alt="" aria-hidden width={120} height={120} className="mx-auto mb-6 animate-float relative" />
           <h2 className="relative text-4xl md:text-5xl font-display font-black mb-4">Ready to hold <span className="text-gradient">LTCme</span>?</h2>
-          <p className="relative text-muted-foreground mb-8 max-w-xl mx-auto">Chomp your way into the future of Agentic Crypto Management. Dual-chain payments, transparent post-presale distribution, one iconic pacman.</p>
+          <p className="relative text-muted-foreground mb-8 max-w-xl mx-auto">Chomp your way into the future of Agentic Crypto Management. Dual-chain payments, instant verified token delivery, one iconic pacman.</p>
           <a href="#presale" className="relative inline-block px-8 py-4 rounded-full font-bold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_60px_oklch(0.65_0.25_295/0.6)] hover:scale-105 transition">
             Join the Presale
           </a>
