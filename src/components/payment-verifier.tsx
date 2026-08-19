@@ -3,20 +3,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, ShieldCheck, ExternalLink } from "lucide-react";
 import { verifyPayment } from "@/lib/presale.functions";
 
-type Chain = "SOL" | "LTC";
-
 export function PaymentVerifier({
-  chain,
   defaultRecipient = "",
   compact = false,
 }: {
-  chain: Chain;
   defaultRecipient?: string;
   compact?: boolean;
 }) {
   const verify = useServerFn(verifyPayment);
   const [txHash, setTxHash] = useState("");
   const [recipient, setRecipient] = useState(defaultRecipient);
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     ok: boolean;
@@ -30,7 +27,11 @@ export function PaymentVerifier({
     setResult(null);
     try {
       const res = await verify({
-        data: { chain, txHash: txHash.trim(), recipient: recipient.trim() },
+        data: {
+          txHash: txHash.trim(),
+          recipient: recipient.trim(),
+          ...(email.trim() ? { email: email.trim() } : {}),
+        },
       });
       setResult(res);
     } catch {
@@ -47,27 +48,34 @@ export function PaymentVerifier({
     <div className="glass rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-primary" />
-        <div className="text-sm font-semibold">Verify payment · get LTCme instantly</div>
+        <div className="text-sm font-semibold">Verify payment · get LTCME instantly</div>
       </div>
       {!compact && (
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Paste the {chain === "SOL" ? "Solana signature" : "Litecoin txid"} of your payment and the
-          Solana address that should receive LTCme. Once the payment is confirmed on-chain, the
-          treasury sends your tokens immediately — no waiting for launch.
+          Paste the Solana signature of your SOL payment and the Solana address that should
+          receive LTCME. Once the payment is confirmed on-chain, the treasury sends your tokens
+          immediately — no waiting for launch. Add your email and we&apos;ll send your receipt.
         </p>
       )}
 
       <input
         value={txHash}
         onChange={(e) => setTxHash(e.target.value)}
-        placeholder={chain === "SOL" ? "Transaction signature" : "Litecoin txid"}
+        placeholder="Solana transaction signature"
         className="w-full rounded-lg bg-background/60 border border-border/60 px-3 py-2 text-xs font-mono outline-none focus:border-primary"
       />
       <input
         value={recipient}
         onChange={(e) => setRecipient(e.target.value)}
-        placeholder="Your Solana address (receives LTCme)"
+        placeholder="Your Solana address (receives LTCME)"
         className="w-full rounded-lg bg-background/60 border border-border/60 px-3 py-2 text-xs font-mono outline-none focus:border-primary"
+      />
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+        placeholder="Email for your receipt (optional)"
+        className="w-full rounded-lg bg-background/60 border border-border/60 px-3 py-2 text-xs outline-none focus:border-primary"
       />
 
       <button
