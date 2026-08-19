@@ -1,18 +1,27 @@
-// Server-only presale payment verification + token delivery.
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+// Server-only presale payment verification + LTCME token delivery (Solana only).
 import {
-  getMint,
-  getOrCreateAssociatedTokenAccount,
-  transfer,
-} from "@solana/spl-token";
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 
-export const SOL_DEV_WALLET = "Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy";
-export const LTC_DEV_WALLET = "ltc1qr9nuxcphqdhrjheqh8c8yh9254wfncd6j9zrk4";
+/** SOL is sent here by buyers. */
+export const SOL_DEV_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
+/** Treasury holding the minted LTCME supply (same wallet, signs deliveries). */
+export const TREASURY_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
 export const PRICE_USD_PER_TOKEN = 0.00002;
 
 const SOL_RPC = "https://api.mainnet-beta.solana.com";
-const LTC_API = "https://litecoinspace.org/api";
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+);
+const SYSTEM_PROGRAM_ID = new PublicKey("11111111111111111111111111111111");
+const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
 
 export type VerifyResult = {
   ok: boolean;
@@ -23,21 +32,20 @@ export type VerifyResult = {
   deliveryTx?: string | null;
 };
 
-async function getPrices(): Promise<{ sol: number; ltc: number }> {
+async function getSolPrice(): Promise<number> {
   try {
     const r = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=solana,litecoin&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
     );
     const j = (await r.json()) as Record<string, { usd: number }>;
-    return { sol: j.solana?.usd ?? 150, ltc: j.litecoin?.usd ?? 90 };
+    return j.solana?.usd ?? 150;
   } catch {
-    return { sol: 150, ltc: 90 };
+    return 150;
   }
 }
 
 function isValidSolanaAddress(v: string) {
   try {
-    // eslint-disable-next-line no-new
     new PublicKey(v);
     return true;
   } catch {
@@ -45,15 +53,14 @@ function isValidSolanaAddress(v: string) {
   }
 }
 
-/** Confirms a Solana transfer landed in the dev wallet; returns SOL amount + payer. */
+/** Confirms a SOL transfer landed in the presale wallet; returns SOL amount + payer. */
 async function verifySolPayment(txHash: string) {
   const conn = new Connection(SOL_RPC, "confirmed");
   const tx = await conn.getTransaction(txHash, {
     maxSupportedTransactionVersion: 0,
     commitment: "confirmed",
   });
-  if (!tx || !tx.meta) return { amount: 0, payer: null as string | null };
-  if (tx.meta.err) return { amount: 0, payer: null };
+  if (!tx || !tx.meta || tx.meta.err) return { amount: 0, payer: null as string | null };
 
   const keys = tx.transaction.message
     .getAccountKeys({ accountKeysFromLookups: tx.meta.loadedAddresses })
@@ -67,30 +74,58 @@ async function verifySolPayment(txHash: string) {
   return { amount: delta / 1e9, payer: keys[0] ?? null };
 }
 
-/** Confirms a Litecoin transfer landed in the dev wallet; returns LTC amount + payer. */
-async function verifyLtcPayment(txHash: string) {
-  const r = await fetch(`${LTC_API}/tx/${txHash}`);
-  if (!r.ok) return { amount: 0, payer: null as string | null, confirmed: false };
-  const tx = (await r.json()) as {
-    vin: { prevout?: { scriptpubkey_address?: string } }[];
-    vout: { scriptpubkey_address?: string; value: number }[];
-    status: { confirmed: boolean };
-  };
-  const litoshis = tx.vout
-    .filter((o) => o.scriptpubkey_address === LTC_DEV_WALLET)
-    .reduce((s, o) => s + o.value, 0);
-  return {
-    amount: litoshis / 1e8,
-    payer: tx.vin?.[0]?.prevout?.scriptpubkey_address ?? null,
-    confirmed: !!tx.status?.confirmed,
-  };
+function findAta(owner: PublicKey, mint: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
 }
 
-/** Sends LTCme SPL tokens from the dev wallet to the buyer. */
+function createAtaIdempotentIx(payer: PublicKey, owner: PublicKey, mint: PublicKey) {
+  return new TransactionInstruction({
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: findAta(owner, mint), isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.from([1]), // CreateIdempotent
+  });
+}
+
+function transferCheckedIx(
+  source: PublicKey,
+  mint: PublicKey,
+  destination: PublicKey,
+  owner: PublicKey,
+  amount: bigint,
+  decimals: number,
+) {
+  const data = Buffer.alloc(10);
+  data.writeUInt8(12, 0); // TransferChecked
+  data.writeBigUInt64LE(amount, 1);
+  data.writeUInt8(decimals, 9);
+  return new TransactionInstruction({
+    programId: TOKEN_PROGRAM_ID,
+    keys: [
+      { pubkey: source, isSigner: false, isWritable: true },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: destination, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: true, isWritable: false },
+    ],
+    data,
+  });
+}
+
+/** Sends LTCME SPL tokens from the treasury wallet to the buyer. */
 async function deliverTokens(recipient: string, tokens: number): Promise<string> {
-  const secret = process.env.SOLANA_DEV_WALLET_PRIVATE_KEY;
+  const secret = process.env.SOLANA_TREASURY_PRIVATE_KEY;
   const mintStr = process.env.LTCME_TOKEN_MINT;
-  if (!secret) throw new Error("Delivery wallet not configured");
+  if (!secret) throw new Error("Treasury wallet not configured");
   if (!mintStr) throw new Error("Token mint not configured");
 
   const raw = secret.trim();
@@ -98,40 +133,46 @@ async function deliverTokens(recipient: string, tokens: number): Promise<string>
     ? Uint8Array.from(JSON.parse(raw) as number[])
     : bs58.decode(raw);
   const payer = Keypair.fromSecretKey(bytes);
-  if (payer.publicKey.toBase58() !== SOL_DEV_WALLET) {
-    throw new Error("Configured delivery key does not match the dev wallet");
+  if (payer.publicKey.toBase58() !== TREASURY_WALLET) {
+    throw new Error("Configured treasury key does not match the treasury wallet");
   }
 
   const conn = new Connection(SOL_RPC, "confirmed");
   const mint = new PublicKey(mintStr);
-  const mintInfo = await getMint(conn, mint);
-  const from = await getOrCreateAssociatedTokenAccount(conn, payer, mint, payer.publicKey);
-  const to = await getOrCreateAssociatedTokenAccount(
-    conn,
-    payer,
-    mint,
-    new PublicKey(recipient),
-  );
-  const amount = BigInt(Math.floor(tokens)) * BigInt(10) ** BigInt(mintInfo.decimals);
-  return await transfer(conn, payer, from.address, to.address, payer, amount);
+  const supply = await conn.getTokenSupply(mint);
+  const decimals = supply.value.decimals;
+  const owner = new PublicKey(recipient);
+
+  const source = findAta(payer.publicKey, mint);
+  const destination = findAta(owner, mint);
+  const amount = BigInt(Math.floor(tokens)) * BigInt(10) ** BigInt(decimals);
+
+  const tx = new Transaction()
+    .add(createAtaIdempotentIx(payer.publicKey, owner, mint))
+    .add(transferCheckedIx(source, mint, destination, payer.publicKey, amount, decimals));
+
+  return await sendAndConfirmTransaction(conn, tx, [payer], {
+    commitment: "confirmed",
+  });
 }
 
 export async function verifyAndDeliver(input: {
-  chain: "SOL" | "LTC";
   txHash: string;
   recipient: string;
+  email?: string;
 }): Promise<VerifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const txHash = input.txHash.trim();
   const recipient = input.recipient.trim();
+  const email = input.email?.trim() || null;
 
   if (!txHash || txHash.length < 32) {
-    return { ok: false, message: "Enter a valid transaction hash." };
+    return { ok: false, message: "Enter a valid Solana transaction signature." };
   }
   if (!isValidSolanaAddress(recipient)) {
     return {
       ok: false,
-      message: "Enter a valid Solana address to receive your LTCme tokens.",
+      message: "Enter a valid Solana address to receive your LTCME tokens.",
     };
   }
 
@@ -139,7 +180,7 @@ export async function verifyAndDeliver(input: {
   const { data: existing } = await supabaseAdmin
     .from("presale_purchases")
     .select("*")
-    .eq("chain", input.chain)
+    .eq("chain", "SOL")
     .eq("tx_hash", txHash)
     .maybeSingle();
 
@@ -154,42 +195,19 @@ export async function verifyAndDeliver(input: {
     };
   }
 
-  const prices = await getPrices();
-  let amountNative = 0;
-  let payerAddress: string | null = null;
-
-  if (input.chain === "SOL") {
-    const res = await verifySolPayment(txHash);
-    amountNative = res.amount;
-    payerAddress = res.payer;
-    if (amountNative <= 0) {
-      return {
-        ok: false,
-        message:
-          "No confirmed SOL payment to the presale wallet was found for that signature. Wait for confirmation and try again.",
-      };
-    }
-  } else {
-    const res = await verifyLtcPayment(txHash);
-    amountNative = res.amount;
-    payerAddress = res.payer;
-    if (amountNative <= 0) {
-      return {
-        ok: false,
-        message:
-          "No Litecoin payment to the presale wallet was found in that transaction.",
-      };
-    }
-    if (!res.confirmed) {
-      return {
-        ok: false,
-        message:
-          "That Litecoin payment is still unconfirmed. Try again once it has at least one confirmation.",
-      };
-    }
+  const res = await verifySolPayment(txHash);
+  const amountNative = res.amount;
+  const payerAddress = res.payer;
+  if (amountNative <= 0) {
+    return {
+      ok: false,
+      message:
+        "No confirmed SOL payment to the presale wallet was found for that signature. Wait for confirmation and try again.",
+    };
   }
 
-  const amountUsd = amountNative * (input.chain === "SOL" ? prices.sol : prices.ltc);
+  const solUsd = await getSolPrice();
+  const amountUsd = amountNative * solUsd;
   const tokens = Math.floor(amountUsd / PRICE_USD_PER_TOKEN);
   if (tokens <= 0) {
     return { ok: false, message: "Payment amount is too small to allocate tokens." };
@@ -199,10 +217,11 @@ export async function verifyAndDeliver(input: {
     .from("presale_purchases")
     .upsert(
       {
-        chain: input.chain,
+        chain: "SOL",
         tx_hash: txHash,
         payer_address: payerAddress,
         recipient_solana_address: recipient,
+        buyer_email: email,
         amount_native: amountNative,
         amount_usd: amountUsd,
         tokens,
@@ -230,9 +249,11 @@ export async function verifyAndDeliver(input: {
       })
       .eq("id", row.id);
 
+    await notifyPurchase({ email, recipient, tokens, amountUsd, amountNative, signature });
+
     return {
       ok: true,
-      message: `Payment verified. ${tokens.toLocaleString()} LTCme sent to your wallet.`,
+      message: `Payment verified. ${tokens.toLocaleString()} LTCME sent to your wallet.`,
       status: "delivered",
       tokens,
       amountUsd,
@@ -250,14 +271,40 @@ export async function verifyAndDeliver(input: {
       })
       .eq("id", row.id);
 
+    await notifyPurchase({
+      email,
+      recipient,
+      tokens,
+      amountUsd,
+      amountNative,
+      signature: null,
+    });
+
     return {
       ok: true,
-      message: `Payment verified for ${tokens.toLocaleString()} LTCme, but automatic delivery could not complete (${msg}). Your allocation is recorded and will be sent shortly.`,
+      message: `Payment verified for ${tokens.toLocaleString()} LTCME, but automatic delivery could not complete (${msg}). Your allocation is recorded and will be sent shortly.`,
       status: "delivery_failed",
       tokens,
       amountUsd,
       deliveryTx: null,
     };
+  }
+}
+
+/** Buyer + owner purchase emails. No-ops until the sender domain is configured. */
+async function notifyPurchase(p: {
+  email: string | null;
+  recipient: string;
+  tokens: number;
+  amountUsd: number;
+  amountNative: number;
+  signature: string | null;
+}) {
+  try {
+    const mod = await import("./presale-email.server");
+    await mod.sendPurchaseEmails(p);
+  } catch (e) {
+    console.error("[presale] email notification skipped", e);
   }
 }
 

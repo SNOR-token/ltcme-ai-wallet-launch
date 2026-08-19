@@ -1,0 +1,1 @@
+ALTER TABLE public.presale_purchases ADD COLUMN IF NOT EXISTS buyer_email text;

@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           amount_native: number
           amount_usd: number
+          buyer_email: string | null
           chain: string
           created_at: string
           delivery_tx: string | null
@@ -33,6 +34,7 @@ export type Database = {
         Insert: {
           amount_native?: number
           amount_usd?: number
+          buyer_email?: string | null
           chain: string
           created_at?: string
           delivery_tx?: string | null
@@ -48,6 +50,7 @@ export type Database = {
         Update: {
           amount_native?: number
           amount_usd?: number
+          buyer_email?: string | null
           chain?: string
           created_at?: string
           delivery_tx?: string | null
