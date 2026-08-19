@@ -2,9 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const verifySchema = z.object({
-  chain: z.enum(["SOL", "LTC"]),
   txHash: z.string().min(16).max(200),
   recipient: z.string().min(32).max(64),
+  email: z.string().email().max(200).optional(),
 });
 
 export const verifyPayment = createServerFn({ method: "POST" })
