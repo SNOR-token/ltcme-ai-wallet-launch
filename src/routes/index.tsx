@@ -254,7 +254,7 @@ function WalletConnect() {
             )}
 
             <div className="mb-3">
-              <PaymentVerifier chain={chain} defaultRecipient={address ?? ""} compact />
+              <PaymentVerifier defaultRecipient={address ?? ""} compact />
             </div>
 
             <div className="text-[11px] text-muted-foreground leading-relaxed">
@@ -424,9 +424,8 @@ function Index() {
 
             <div id="presale-buy"><WalletConnect /></div>
 
-            <div className="grid md:grid-cols-2 gap-3 mt-4">
-              <PaymentVerifier chain="SOL" />
-              <PaymentVerifier chain="LTC" />
+            <div className="mt-4">
+              <PaymentVerifier />
             </div>
 
             <div className="grid md:grid-cols-2 gap-3 mt-4">

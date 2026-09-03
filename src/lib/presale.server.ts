@@ -1,12 +1,9 @@
 // Server-only presale payment verification + LTCME token delivery (Solana only).
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-  sendAndConfirmTransaction,
-} from "@solana/web3.js";
+// Worker-safe: talks to Solana JSON-RPC over plain fetch and signs transactions
+// with pure-JS ed25519 (no @solana/web3.js, which pulls in rpc-websockets and
+// breaks the Cloudflare Worker build).
+import { ed25519 } from "@noble/curves/ed25519";
+import { sha256 } from "@noble/hashes/sha256";
 import bs58 from "bs58";
 
 /** SOL is sent here by buyers. */
@@ -16,12 +13,10 @@ export const TREASURY_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
 export const PRICE_USD_PER_TOKEN = 0.00002;
 
 const SOL_RPC = "https://api.mainnet-beta.solana.com";
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
-  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-);
-const SYSTEM_PROGRAM_ID = new PublicKey("11111111111111111111111111111111");
-const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
+const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+const SYSTEM_PROGRAM_ID = "11111111111111111111111111111111";
+const RENT_SYSVAR_ID = "SysvarRent111111111111111111111111111111111";
 
 export type VerifyResult = {
   ok: boolean;
@@ -31,6 +26,157 @@ export type VerifyResult = {
   amountUsd?: number;
   deliveryTx?: string | null;
 };
+
+/* ------------------------------ RPC helper ------------------------------ */
+
+async function rpc<T>(method: string, params: unknown[]): Promise<T> {
+  const res = await fetch(SOL_RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  const json = (await res.json()) as { result?: T; error?: { message: string } };
+  if (json.error) throw new Error(`${method}: ${json.error.message}`);
+  return json.result as T;
+}
+
+/* --------------------------- address utilities -------------------------- */
+
+function decodeAddress(v: string): Uint8Array {
+  const bytes = bs58.decode(v);
+  if (bytes.length !== 32) throw new Error("Invalid Solana address");
+  return bytes;
+}
+
+function isValidSolanaAddress(v: string) {
+  try {
+    decodeAddress(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function concat(parts: Uint8Array[]): Uint8Array {
+  const total = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const p of parts) {
+    out.set(p, o);
+    o += p.length;
+  }
+  return out;
+}
+
+const PDA_MARKER = new TextEncoder().encode("ProgramDerivedAddress");
+
+/** Associated token account address for (owner, mint). */
+function findAta(owner: string, mint: string): string {
+  const seeds = [decodeAddress(owner), decodeAddress(TOKEN_PROGRAM_ID), decodeAddress(mint)];
+  const programId = decodeAddress(ASSOCIATED_TOKEN_PROGRAM_ID);
+  for (let bump = 255; bump >= 0; bump--) {
+    const hash = sha256(concat([...seeds, new Uint8Array([bump]), programId, PDA_MARKER]));
+    // Off-curve check: a valid PDA must NOT be a point on the ed25519 curve.
+    let onCurve = true;
+    try {
+      ed25519.Point.fromBytes(hash);
+    } catch {
+      onCurve = false;
+    }
+    if (!onCurve) return bs58.encode(hash);
+  }
+  throw new Error("Unable to derive associated token account");
+}
+
+/* ---------------------- legacy transaction assembly --------------------- */
+
+type AccountMeta = { pubkey: string; isSigner: boolean; isWritable: boolean };
+type Instruction = { programId: string; keys: AccountMeta[]; data: Uint8Array };
+
+function compactU16(n: number): Uint8Array {
+  const out: number[] = [];
+  let v = n;
+  for (;;) {
+    if (v < 0x80) {
+      out.push(v);
+      break;
+    }
+    out.push((v & 0x7f) | 0x80);
+    v >>= 7;
+  }
+  return new Uint8Array(out);
+}
+
+function buildMessage(
+  feePayer: string,
+  instructions: Instruction[],
+  recentBlockhash: string,
+): Uint8Array {
+  const metas = new Map<string, AccountMeta>();
+  const touch = (m: AccountMeta) => {
+    const prev = metas.get(m.pubkey);
+    if (prev) {
+      prev.isSigner ||= m.isSigner;
+      prev.isWritable ||= m.isWritable;
+    } else {
+      metas.set(m.pubkey, { ...m });
+    }
+  };
+  touch({ pubkey: feePayer, isSigner: true, isWritable: true });
+  for (const ix of instructions) {
+    for (const k of ix.keys) touch(k);
+    touch({ pubkey: ix.programId, isSigner: false, isWritable: false });
+  }
+
+  const all = [...metas.values()].filter((m) => m.pubkey !== feePayer);
+  const signedWritable = all.filter((m) => m.isSigner && m.isWritable);
+  const signedReadonly = all.filter((m) => m.isSigner && !m.isWritable);
+  const unsignedWritable = all.filter((m) => !m.isSigner && m.isWritable);
+  const unsignedReadonly = all.filter((m) => !m.isSigner && !m.isWritable);
+
+  const ordered = [
+    metas.get(feePayer)!,
+    ...signedWritable,
+    ...signedReadonly,
+    ...unsignedWritable,
+    ...unsignedReadonly,
+  ];
+  const index = new Map(ordered.map((m, i) => [m.pubkey, i]));
+
+  const header = new Uint8Array([
+    1 + signedWritable.length + signedReadonly.length,
+    signedReadonly.length,
+    unsignedReadonly.length,
+  ]);
+
+  const keyBytes = concat([
+    compactU16(ordered.length),
+    ...ordered.map((m) => decodeAddress(m.pubkey)),
+  ]);
+
+  const ixBytes = concat([
+    compactU16(instructions.length),
+    ...instructions.map((ix) =>
+      concat([
+        new Uint8Array([index.get(ix.programId)!]),
+        compactU16(ix.keys.length),
+        new Uint8Array(ix.keys.map((k) => index.get(k.pubkey)!)),
+        compactU16(ix.data.length),
+        ix.data,
+      ]),
+    ),
+  ]);
+
+  return concat([header, keyBytes, decodeAddress(recentBlockhash), ixBytes]);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
+}
+
+/* ------------------------------ price feed ----------------------------- */
 
 async function getSolPrice(): Promise<number> {
   try {
@@ -44,45 +190,35 @@ async function getSolPrice(): Promise<number> {
   }
 }
 
-function isValidSolanaAddress(v: string) {
-  try {
-    new PublicKey(v);
-    return true;
-  } catch {
-    return false;
-  }
-}
+/* --------------------------- payment verification ---------------------- */
 
 /** Confirms a SOL transfer landed in the presale wallet; returns SOL amount + payer. */
 async function verifySolPayment(txHash: string) {
-  const conn = new Connection(SOL_RPC, "confirmed");
-  const tx = await conn.getTransaction(txHash, {
-    maxSupportedTransactionVersion: 0,
-    commitment: "confirmed",
-  });
+  const tx = await rpc<{
+    meta: {
+      err: unknown;
+      preBalances: number[];
+      postBalances: number[];
+    } | null;
+    transaction: { message: { accountKeys: { pubkey: string }[] } };
+  } | null>("getTransaction", [
+    txHash,
+    { maxSupportedTransactionVersion: 0, commitment: "confirmed", encoding: "jsonParsed" },
+  ]);
+
   if (!tx || !tx.meta || tx.meta.err) return { amount: 0, payer: null as string | null };
 
-  const keys = tx.transaction.message
-    .getAccountKeys({ accountKeysFromLookups: tx.meta.loadedAddresses })
-    .keySegments()
-    .flat()
-    .map((k) => k.toBase58());
-
+  const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey);
   const idx = keys.indexOf(SOL_DEV_WALLET);
   if (idx === -1) return { amount: 0, payer: null };
   const delta = (tx.meta.postBalances[idx] ?? 0) - (tx.meta.preBalances[idx] ?? 0);
   return { amount: delta / 1e9, payer: keys[0] ?? null };
 }
 
-function findAta(owner: PublicKey, mint: PublicKey) {
-  return PublicKey.findProgramAddressSync(
-    [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-  )[0];
-}
+/* ------------------------------- delivery ------------------------------ */
 
-function createAtaIdempotentIx(payer: PublicKey, owner: PublicKey, mint: PublicKey) {
-  return new TransactionInstruction({
+function createAtaIdempotentIx(payer: string, owner: string, mint: string): Instruction {
+  return {
     programId: ASSOCIATED_TOKEN_PROGRAM_ID,
     keys: [
       { pubkey: payer, isSigner: true, isWritable: true },
@@ -93,23 +229,24 @@ function createAtaIdempotentIx(payer: PublicKey, owner: PublicKey, mint: PublicK
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false },
     ],
-    data: Buffer.from([1]), // CreateIdempotent
-  });
+    data: new Uint8Array([1]), // CreateIdempotent
+  };
 }
 
 function transferCheckedIx(
-  source: PublicKey,
-  mint: PublicKey,
-  destination: PublicKey,
-  owner: PublicKey,
+  source: string,
+  mint: string,
+  destination: string,
+  owner: string,
   amount: bigint,
   decimals: number,
-) {
-  const data = Buffer.alloc(10);
-  data.writeUInt8(12, 0); // TransferChecked
-  data.writeBigUInt64LE(amount, 1);
-  data.writeUInt8(decimals, 9);
-  return new TransactionInstruction({
+): Instruction {
+  const data = new Uint8Array(10);
+  const view = new DataView(data.buffer);
+  view.setUint8(0, 12); // TransferChecked
+  view.setBigUint64(1, amount, true);
+  view.setUint8(9, decimals);
+  return {
     programId: TOKEN_PROGRAM_ID,
     keys: [
       { pubkey: source, isSigner: false, isWritable: true },
@@ -118,42 +255,72 @@ function transferCheckedIx(
       { pubkey: owner, isSigner: true, isWritable: false },
     ],
     data,
-  });
+  };
+}
+
+async function confirmSignature(signature: string) {
+  for (let i = 0; i < 30; i++) {
+    const res = await rpc<{
+      value: ({ err: unknown; confirmationStatus: string } | null)[];
+    }>("getSignatureStatuses", [[signature], { searchTransactionHistory: false }]);
+    const status = res.value[0];
+    if (status) {
+      if (status.err) throw new Error("Delivery transaction failed on-chain");
+      if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized")
+        return;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  throw new Error("Delivery transaction was not confirmed in time");
 }
 
 /** Sends LTCME SPL tokens from the treasury wallet to the buyer. */
 async function deliverTokens(recipient: string, tokens: number): Promise<string> {
-  const secret = process.env.SOLANA_TREASURY_PRIVATE_KEY;
-  const mintStr = process.env.LTCME_TOKEN_MINT;
+  const secret = process.env['SOLANA_TREASURY_PRIVATE_KEY'];
+  const mint = process.env['LTCME_TOKEN_MINT'];
   if (!secret) throw new Error("Treasury wallet not configured");
-  if (!mintStr) throw new Error("Token mint not configured");
+  if (!mint) throw new Error("Token mint not configured");
 
   const raw = secret.trim();
   const bytes = raw.startsWith("[")
     ? Uint8Array.from(JSON.parse(raw) as number[])
     : bs58.decode(raw);
-  const payer = Keypair.fromSecretKey(bytes);
-  if (payer.publicKey.toBase58() !== TREASURY_WALLET) {
+  const seed = bytes.slice(0, 32);
+  const publicKey = ed25519.getPublicKey(seed);
+  const payer = bs58.encode(publicKey);
+  if (payer !== TREASURY_WALLET) {
     throw new Error("Configured treasury key does not match the treasury wallet");
   }
 
-  const conn = new Connection(SOL_RPC, "confirmed");
-  const mint = new PublicKey(mintStr);
-  const supply = await conn.getTokenSupply(mint);
+  const supply = await rpc<{ value: { decimals: number } }>("getTokenSupply", [mint]);
   const decimals = supply.value.decimals;
-  const owner = new PublicKey(recipient);
 
-  const source = findAta(payer.publicKey, mint);
-  const destination = findAta(owner, mint);
+  const source = findAta(payer, mint);
+  const destination = findAta(recipient, mint);
   const amount = BigInt(Math.floor(tokens)) * BigInt(10) ** BigInt(decimals);
 
-  const tx = new Transaction()
-    .add(createAtaIdempotentIx(payer.publicKey, owner, mint))
-    .add(transferCheckedIx(source, mint, destination, payer.publicKey, amount, decimals));
+  const { value } = await rpc<{ value: { blockhash: string } }>("getLatestBlockhash", [
+    { commitment: "confirmed" },
+  ]);
 
-  return await sendAndConfirmTransaction(conn, tx, [payer], {
-    commitment: "confirmed",
-  });
+  const message = buildMessage(
+    payer,
+    [
+      createAtaIdempotentIx(payer, recipient, mint),
+      transferCheckedIx(source, mint, destination, payer, amount, decimals),
+    ],
+    value.blockhash,
+  );
+
+  const signature = ed25519.sign(message, seed);
+  const wire = concat([compactU16(1), signature, message]);
+
+  const sig = await rpc<string>("sendTransaction", [
+    toBase64(wire),
+    { encoding: "base64", preflightCommitment: "confirmed", maxRetries: 3 },
+  ]);
+  await confirmSignature(sig);
+  return sig;
 }
 
 export async function verifyAndDeliver(input: {
