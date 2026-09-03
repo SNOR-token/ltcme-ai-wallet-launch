@@ -254,7 +254,7 @@ function WalletConnect() {
             )}
 
             <div className="mb-3">
-              <PaymentVerifier chain={chain} defaultRecipient={address ?? ""} compact />
+              <PaymentVerifier defaultRecipient={address ?? ""} compact />
             </div>
 
             <div className="text-[11px] text-muted-foreground leading-relaxed">
