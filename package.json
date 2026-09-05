@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:cloudflare": "npm run build && node scripts/prepare-cloudflare-config.mjs",
+    "deploy": "npm run build:cloudflare && cd .output/server && npx --yes wrangler@4.126.0 deploy",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
