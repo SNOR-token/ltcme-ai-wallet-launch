@@ -10,7 +10,7 @@ import bs58 from "bs58";
 export const SOL_DEV_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
 /** Treasury holding the minted LTCME supply (same wallet, signs deliveries). */
 export const TREASURY_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
-export const PRICE_USD_PER_TOKEN = 0.00002;
+export const PRICE_USD_PER_TOKEN = 0.0001;
 
 const SOL_RPC = "https://api.mainnet-beta.solana.com";
 const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";

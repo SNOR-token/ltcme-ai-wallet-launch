@@ -43,21 +43,20 @@ export const Route = createFileRoute("/")({
 
 
 // Presale closes at a fixed moment — countdown ticks down to the second.
-const PRESALE_END = new Date("2026-08-06T00:00:00Z").getTime();
-const PRESALE_ALLOCATION = 1_000_000_000; // 1B tokens minted
-const SOLD = 412_800_000;
-const RAISED_SOL = 619;
-const TARGET_SOL = 1_500;
-const SOL_DEV_WALLET = "Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy";
-const LTC_DEV_WALLET = "ltc1qr9nuxcphqdhrjheqh8c8yh9254wfncd6j9zrk4";
+const PRESALE_END = new Date("2026-09-15T00:00:00Z").getTime();
+const TOTAL_SUPPLY = 1_000_000_000; // 1B LTCME minted on Solana
+const PRESALE_ALLOCATION = 500_000_000; // 50% reserved in the presale wallet
+const SOLD = 128_400_000;
+const TOKEN_MINT = "99Cxx8YokdjqwxoWq3NPgViqLtn7Kmt4KVTaKyYFPe7p";
+const SOL_DEV_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
 
-// USD-anchored pricing so every tier maps cleanly to tokens.
-// 1 LTCme = $0.00002  →  $1 = 50,000 LTCme  ·  $100 = 5,000,000 LTCme
-const PRICE_USD_PER_TOKEN = 0.00002;
+// Presale price is fixed in USD: LTCME received = USD paid ÷ 0.00010
+const PRICE_USD_PER_TOKEN = 0.0001;
 const SOL_USD = 150; // reference price for on-page conversion
-const LTC_USD = 90;
-const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD; // ~1.33e-7
-const PRICE_LTC_PER_TOKEN = PRICE_USD_PER_TOKEN / LTC_USD; // ~2.22e-7
+const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD;
+const HARD_CAP_USD = PRESALE_ALLOCATION * PRICE_USD_PER_TOKEN; // $50,000
+const FDV_USD = TOTAL_SUPPLY * PRICE_USD_PER_TOKEN; // $100,000 implied FDV
+const RAISED_USD = SOLD * PRICE_USD_PER_TOKEN;
 
 const PRICE_TIERS = [
   { usd: 1,   label: "Taster" },
@@ -83,8 +82,6 @@ function useCountdown(target: number) {
   };
 }
 
-type Chain = "SOL" | "LTC";
-
 declare global {
   interface Window {
     solana?: {
@@ -97,27 +94,23 @@ declare global {
 
 function WalletConnect() {
   const [open, setOpen] = useState(false);
-  const [chain, setChain] = useState<Chain>("SOL");
   const [address, setAddress] = useState<string | null>(null);
   const [usd, setUsd] = useState(10);
   const [status, setStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const receive = chain === "SOL" ? SOL_DEV_WALLET : LTC_DEV_WALLET;
-  const rate = chain === "SOL" ? PRICE_SOL_PER_TOKEN : PRICE_LTC_PER_TOKEN;
-  const chainUsd = chain === "SOL" ? SOL_USD : LTC_USD;
-  const chainAmount = usd / chainUsd;
+  const solAmount = usd / SOL_USD;
   const tokensOut = Math.floor(usd / PRICE_USD_PER_TOKEN);
 
   const connectPhantom = async () => {
     if (typeof window === "undefined" || !window.solana?.isPhantom) {
-      setStatus("Phantom not detected — install Phantom or use manual send below.");
+      setStatus("Phantom not detected — install Phantom, Solflare or Backpack to continue.");
       return;
     }
     try {
       const r = await window.solana.connect();
       setAddress(r.publicKey.toString());
-      setStatus("Wallet connected. Send your payment, then paste the transaction hash below — verification triggers an instant on-chain transfer of your LTCme.");
+      setStatus("Wallet connected. Send your SOL payment, then confirm it below — once the transaction is confirmed on Solana mainnet, your LTCME is sent automatically.");
     } catch {
       setStatus("Connection cancelled.");
     }
@@ -135,7 +128,7 @@ function WalletConnect() {
         onClick={() => setOpen(true)}
         className="w-full px-6 py-4 rounded-2xl font-bold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.6)] hover:scale-[1.02] transition inline-flex items-center justify-center gap-2 text-lg"
       >
-        <Link2 className="w-5 h-5" /> Connect Wallet & Buy LTCme
+        <Link2 className="w-5 h-5" /> Connect Wallet & Buy LTCME
       </button>
 
       {open && (
@@ -153,26 +146,12 @@ function WalletConnect() {
             >
               ✕
             </button>
-            <h3 className="font-display font-black text-2xl mb-1">Buy LTCme</h3>
+            <h3 className="font-display font-black text-2xl mb-1">Buy LTCME</h3>
             <p className="text-xs text-muted-foreground mb-5">
-              Pay in SOL or LTC, paste your transaction hash, and our verifier checks it on-chain. On success your LTCme is <span className="text-primary font-semibold">transferred instantly</span> from the token treasury — no waiting for launch. Crypto is volatile; only spend what you can afford to lose.
+              Pay in SOL on Solana mainnet, then confirm your transaction. The app checks it
+              on-chain and, once confirmed, the presale wallet sends your LTCME
+              <span className="text-primary font-semibold"> automatically</span> — no waiting for launch.
             </p>
-
-            <div className="grid grid-cols-2 gap-2 mb-5 p-1 glass rounded-xl">
-              {(["SOL", "LTC"] as Chain[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setChain(c)}
-                  className={`py-2 rounded-lg text-sm font-semibold transition ${
-                    chain === c
-                      ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {c === "SOL" ? "Solana" : "Litecoin"}
-                </button>
-              ))}
-            </div>
 
             <div className="mb-4">
               <div className="text-xs uppercase text-muted-foreground tracking-wider mb-2">Pick your bag (USD)</div>
@@ -190,7 +169,7 @@ function WalletConnect() {
                     <div className="font-display font-black text-lg">${t.usd}</div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
                     <div className="text-[11px] font-mono text-primary mt-1">
-                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCme
+                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCME
                     </div>
                   </button>
                 ))}
@@ -201,45 +180,37 @@ function WalletConnect() {
               <div className="glass rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <div className="text-xs uppercase text-muted-foreground">You pay</div>
-                  <div className="font-mono font-bold text-lg">
-                    {chainAmount.toFixed(chain === "SOL" ? 4 : 5)} {chain}
-                  </div>
+                  <div className="font-mono font-bold text-lg">{solAmount.toFixed(4)} SOL</div>
                   <div className="text-[11px] text-muted-foreground">≈ ${usd.toFixed(2)} USD</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-muted-foreground text-right">You receive</div>
                   <div className="font-mono font-bold text-xl text-gradient text-right">
-                    {tokensOut.toLocaleString()} LTCme
+                    {tokensOut.toLocaleString()} LTCME
                   </div>
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground text-center font-mono">
-                Rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 {chain} ≈ {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme
+                Presale price: 1 LTCME = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 SOL ≈ {Math.floor(1 / PRICE_SOL_PER_TOKEN).toLocaleString()} LTCME
               </div>
             </div>
 
-            {chain === "SOL" ? (
-              <button
-                onClick={connectPhantom}
-                className="w-full px-5 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground mb-3 inline-flex items-center justify-center gap-2"
-              >
-                <Wallet className="w-4 h-4" />
-                {address ? `Connected: ${address.slice(0, 4)}…${address.slice(-4)}` : "Connect Phantom"}
-              </button>
-            ) : (
-              <div className="text-xs text-muted-foreground mb-3">
-                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). Once the payment has one confirmation, paste the tx hash below with your Solana address — tokens are sent to you immediately after verification.
-              </div>
-            )}
+            <button
+              onClick={connectPhantom}
+              className="w-full px-5 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground mb-3 inline-flex items-center justify-center gap-2"
+            >
+              <Wallet className="w-4 h-4" />
+              {address ? `Connected: ${address.slice(0, 4)}…${address.slice(-4)}` : "Connect Phantom"}
+            </button>
 
             <div className="glass rounded-xl p-3 mb-3">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
-                {chain === "SOL" ? "Solana receive address" : "Litecoin receive address"}
+                Solana presale receive address
               </div>
               <div className="flex items-center gap-2">
-                <div className="font-mono text-xs truncate flex-1">{receive}</div>
+                <div className="font-mono text-xs truncate flex-1">{SOL_DEV_WALLET}</div>
                 <button
-                  onClick={() => copy(receive, "recv")}
+                  onClick={() => copy(SOL_DEV_WALLET, "recv")}
                   className="px-2 py-1 rounded-md bg-primary/20 text-primary text-xs inline-flex items-center gap-1"
                 >
                   <Copy className="w-3 h-3" /> {copied === "recv" ? "Copied" : "Copy"}
@@ -253,12 +224,8 @@ function WalletConnect() {
               </div>
             )}
 
-            <div className="mb-3">
+            <div className="mb-1">
               <PaymentVerifier defaultRecipient={address ?? ""} compact />
-            </div>
-
-            <div className="text-[11px] text-muted-foreground leading-relaxed">
-              ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> Payment and delivery are two separate on-chain steps: you send funds, our verifier confirms the transaction, then the treasury sends your LTCme automatically. There is no atomic escrow contract, so always keep your tx hash. Only send what you can afford to lose.
             </div>
           </div>
         </div>
@@ -311,7 +278,7 @@ function Index() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              Presale Live · SOL + LTC accepted
+              Presale Live · Solana Mainnet · SOL accepted
             </div>
             <h1 className="text-5xl md:text-7xl font-display font-black leading-[1.02] mb-6">
               <span className="text-gradient">LTCme.Click</span><br />
@@ -322,7 +289,9 @@ function Index() {
             </p>
             <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
               An AI-driven Litecoin wallet with a light-blue pacman AI companion guiding every move.
-              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens already minted on Solana — pay with SOL or LTC and get your tokens instantly on payment verification, no waiting for launch.
+              1,000,000,000 <span className="text-primary font-semibold">LTCME</span> minted on Solana, with
+              500,000,000 (50%) held in a dedicated presale wallet. Pay in SOL, your transaction is confirmed
+              on Solana mainnet, and your tokens are sent automatically — no waiting for launch.
             </p>
             <div className="flex flex-wrap gap-4">
               <a href="#presale" className="px-6 py-3.5 rounded-full font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.5)] hover:scale-105 transition">
@@ -334,9 +303,9 @@ function Index() {
             </div>
             <div className="mt-10 grid grid-cols-3 gap-6 max-w-md">
               {[
-                { v: "1B", l: "Tokens minted" },
-                { v: "SOL+LTC", l: "Accepted" },
-                { v: "Instant", l: "Delivery" },
+                { v: "1B", l: "Total supply" },
+                { v: "500M", l: "Presale reserved" },
+                { v: "$0.00010", l: "Presale price" },
               ].map((x) => (
                 <div key={x.l}>
                   <div className="text-2xl font-display font-bold text-gradient">{x.v}</div>
@@ -363,10 +332,10 @@ function Index() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <Rocket className="w-5 h-5 text-primary" />
-              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Instant Delivery</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCME Presale · Solana Mainnet</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-display font-black mb-2">Ends in</h2>
-            <p className="text-sm text-muted-foreground mb-8">Tokens are already minted and held in the treasury wallet. Verify your payment and LTCme lands in your wallet within seconds — no waiting for launch.</p>
+            <p className="text-sm text-muted-foreground mb-8">500,000,000 LTCME — half the total supply — is already minted and sitting in the dedicated presale wallet. Pay in SOL, confirm your transaction, and your tokens are sent from that wallet automatically once Solana confirms it.</p>
 
             <div className="grid grid-cols-4 gap-3 md:gap-6 mb-10">
               {[
@@ -384,8 +353,8 @@ function Index() {
 
             <div className="mb-6">
               <div className="flex justify-between text-sm mb-2 font-mono">
-                <span className="text-muted-foreground">Sold: <span className="text-primary font-semibold">{SOLD.toLocaleString()} LTCme</span></span>
-                <span className="text-muted-foreground">Supply: {PRESALE_ALLOCATION.toLocaleString()} LTCme</span>
+                <span className="text-muted-foreground">Sold: <span className="text-primary font-semibold">{SOLD.toLocaleString()} LTCME</span></span>
+                <span className="text-muted-foreground">Presale allocation: {PRESALE_ALLOCATION.toLocaleString()} LTCME</span>
               </div>
               <div className="h-4 rounded-full bg-muted/50 overflow-hidden relative">
                 <div className="h-full bg-gradient-to-r from-primary via-accent to-secondary relative"
@@ -395,12 +364,12 @@ function Index() {
               </div>
               <div className="flex justify-between text-xs mt-2 text-muted-foreground">
                 <span>{soldPct.toFixed(1)}% filled</span>
-                <span>{RAISED_SOL.toLocaleString()} / {TARGET_SOL.toLocaleString()} SOL raised</span>
+                <span>${RAISED_USD.toLocaleString()} / ${HARD_CAP_USD.toLocaleString()} raised</span>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL or LTC</div>
+              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL</div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {PRICE_TIERS.map((t) => {
                   const tokens = Math.floor(t.usd / PRICE_USD_PER_TOKEN);
@@ -409,16 +378,16 @@ function Index() {
                        className="glass rounded-xl p-3 text-center hover:border-primary/60 transition group">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
                       <div className="font-display font-black text-2xl text-gradient">${t.usd}</div>
-                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCme</div>
+                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCME</div>
                       <div className="text-[10px] text-muted-foreground mt-1 font-mono">
-                        {(t.usd / SOL_USD).toFixed(4)} SOL · {(t.usd / LTC_USD).toFixed(4)} LTC
+                        {(t.usd / SOL_USD).toFixed(4)} SOL
                       </div>
                     </a>
                   );
                 })}
               </div>
               <div className="text-center text-xs text-muted-foreground mt-3 font-mono">
-                Fixed rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · every dollar always maps to the same token count
+                Presale price: 1 LTCME = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · LTCME received = USD paid ÷ 0.00010
               </div>
             </div>
 
@@ -434,12 +403,12 @@ function Index() {
                 <div className="font-mono truncate">{SOL_DEV_WALLET}</div>
               </div>
               <div className="glass rounded-xl p-3 text-xs">
-                <div className="uppercase text-muted-foreground tracking-widest mb-1">LTC receive wallet</div>
-                <div className="font-mono truncate">{LTC_DEV_WALLET}</div>
+                <div className="uppercase text-muted-foreground tracking-widest mb-1">LTCME token mint (Solana)</div>
+                <div className="font-mono truncate">{TOKEN_MINT}</div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              ⚠️ Delivery is automated but not atomic: you pay, our backend verifier confirms the transaction on-chain, then the treasury wallet transfers your LTCme to the Solana address you provide. Keep your tx hash — it is your proof of payment and can be re-verified at any time. Only participate with funds you can afford to lose.
+              How it works: send SOL to the presale wallet, then hit confirm. The app checks the transaction on Solana mainnet and, once confirmed, the presale wallet sends {`${(1 / PRICE_USD_PER_TOKEN).toLocaleString()}`} LTCME per $1 paid straight to your Solana address.
             </p>
           </div>
         </div>
@@ -535,14 +504,14 @@ function Index() {
           <div className="text-center mb-16">
             <div className="text-xs font-mono uppercase tracking-widest text-primary mb-3">// Tokenomics</div>
             <h2 className="text-4xl md:text-6xl font-display font-black">The <span className="text-gradient">LTCme</span> economy</h2>
-            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">A fixed supply of 1 billion tokens — already minted on Solana. Transparent allocation, long-term vesting, and instant delivery from a public dev wallet.</p>
+            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">A fixed supply of 1,000,000,000 LTCME — already minted on Solana. Half of it (500,000,000) sits in a dedicated presale wallet, so every purchase is delivered from tokens that already exist.</p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-12">
             {[
-              { l: "Total Supply", v: "1,000,000,000", s: "LTCme · Pre-minted · Fixed forever" },
-              { l: "Blockchain", v: "Solana (SPL)", s: "Buy with SOL or LTC · Sub-cent fees" },
-              { l: "Presale Price", v: "$0.00002", s: "USD per LTCme · $1 = 50,000 tokens" },
+              { l: "Total Supply", v: "1,000,000,000", s: "LTCME · Pre-minted · Fixed forever" },
+              { l: "Presale Allocation", v: "500,000,000", s: "50% reserved · $50,000 hard cap" },
+              { l: "Presale Price", v: "$0.00010", s: "USD per LTCME · $1 = 10,000 tokens" },
             ].map((x) => (
               <div key={x.l} className="glass rounded-2xl p-6 text-center">
                 <div className="text-xs uppercase text-muted-foreground tracking-widest">{x.l}</div>
@@ -557,12 +526,12 @@ function Index() {
               <h3 className="font-display font-bold text-2xl mb-6 flex items-center gap-2"><Coins className="w-5 h-5 text-primary" /> Distribution</h3>
               <div className="space-y-4">
                 {[
-                  { l: "Presale (instant delivery)", p: 40 },
+                  { l: "Presale wallet (500,000,000)", p: 50 },
                   { l: "Liquidity Pool (locked 2y)", p: 20 },
-                  { l: "Ecosystem & Rewards", p: 15 },
-                  { l: "Team (24mo vest, 6mo cliff)", p: 12 },
-                  { l: "Marketing & Partnerships", p: 8 },
-                  { l: "Treasury / Reserve", p: 5 },
+                  { l: "Ecosystem & Rewards", p: 12 },
+                  { l: "Team (24mo vest, 6mo cliff)", p: 10 },
+                  { l: "Marketing & Partnerships", p: 5 },
+                  { l: "Treasury / Reserve", p: 3 },
                 ].map((x) => (
                   <div key={x.l}>
                     <div className="flex justify-between text-sm mb-1.5">
@@ -611,8 +580,8 @@ function Index() {
           <div className="relative">
             <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-secondary to-transparent" />
             {[
-              { q: "Q2 2026", t: "Token Mint + Wallet Beta", d: "1B LTCme SPL minted on Solana. iOS + Android + Chrome extension beta live with Chomp AI v1.", done: true },
-              { q: "Q3 2026", t: "Presale (Instant Delivery)", d: "Public presale opens — buy with SOL or LTC. Every payment is verified on-chain and LTCme is transferred from the treasury wallet immediately. Community push to 25k across X + Telegram.", done: true },
+              { q: "Q2 2026", t: "Token Mint + Wallet Beta", d: "1,000,000,000 LTCME SPL minted on Solana; 500,000,000 moved into the dedicated presale wallet. iOS + Android + Chrome extension beta live with Chomp AI v1.", done: true },
+              { q: "Q3 2026", t: "Presale (Automatic Delivery)", d: "Public presale opens on Solana mainnet at $0.00010 per LTCME. Every SOL payment is confirmed on-chain and LTCME is sent from the presale wallet automatically. Community push to 25k across X + Telegram.", done: true },
               { q: "Q4 2026", t: "DEX Launch + CEX Listings", d: "LTCme lists on Raydium & Jupiter. Liquidity locked for 24 months. Tier-2 CEX listings. Staking goes live.", done: false },
               { q: "Q1 2027", t: "Full Wallet Launch", d: "Cross-chain swaps, hardware wallet support, .ltc handles, voice commands, biometric flows." },
               { q: "Q2 2027", t: "Chomp AI v2 + DAO", d: "Proactive portfolio management, DeFi strategy engine, LTCme DAO governance goes live." },
@@ -648,8 +617,8 @@ function Index() {
               { n: "01", t: "Problem", d: "Crypto wallets remain hostile to newcomers. Interfaces are technical, mistakes are permanent, and users have no trusted guide. Meanwhile, mobile-first users demand conversational, intelligent software." },
               { n: "02", t: "Solution", d: "LTCme.Click combines a hardened non-custodial Litecoin wallet with an embedded pacman AI companion trained on crypto operations, on-chain data, and user-education material. Chomp translates intent into safe actions." },
               { n: "03", t: "Architecture", d: "Client-side key management (BIP-39 + BIP-84 native SegWit). Chomp runs a hybrid model: on-device inference for privacy-sensitive queries, edge inference for market data. Zero telemetry by default." },
-              { n: "04", t: "Solana Presale Layer", d: "LTCme is an SPL token used for governance, fee discounts, and rewards. 1B tokens are minted on Solana and held in a public team wallet. Presale delivery is automated: incoming SOL/LTC payments are verified on-chain and LTCme is transferred to the buyer instantly." },
-              { n: "05", t: "Dual-Chain Payments", d: "Pay with SOL (Phantom / Solflare / Backpack) or LTC (any Litecoin wallet). Payments are verified on-chain against the treasury wallet and matched to your submitted Solana receive address, which then receives LTCme automatically. Delivery is automatic but not atomic — always keep your tx hash." },
+              { n: "04", t: "Solana Presale Layer", d: "LTCME is an SPL token (mint 99Cxx8YokdjqwxoWq3NPgViqLtn7Kmt4KVTaKyYFPe7p) used for governance, fee discounts, and rewards. 1,000,000,000 tokens are minted on Solana; 500,000,000 are held in a public presale wallet at a fixed presale price of $0.00010 per LTCME — a $50,000 presale hard cap and $100,000 implied fully diluted valuation." },
+              { n: "05", t: "Solana-Only Payments", d: "Pay with SOL from Phantom, Solflare or Backpack. The app confirms your transaction on Solana mainnet against the presale wallet, converts SOL → USD → LTCME (USD paid ÷ 0.00010), and the presale wallet sends your tokens to the Solana address you provide. A Litecoin ↔ Solana bridge lands inside the wallet after launch." },
               { n: "06", t: "Security & Governance", d: "Two independent audits, a $250k bug bounty at launch, and multi-sig treasury. Liquidity locked 24 months. Team tokens vest linearly over 24 months with a 6-month cliff. Post-launch DAO governs new features, chains, and fee routing." },
             ].map((s) => (
               <div key={s.n} className="glass rounded-2xl p-6 hover:border-primary/50 transition">
@@ -697,7 +666,7 @@ function Index() {
                 href: "https://blockchair.com/litecoin",
                 icon: Search,
                 title: "Litecoin Explorer",
-                desc: "Verify our LTC dev wallet, track incoming presale payments, and audit every transaction in real time.",
+                desc: "Explore the Litecoin network in real time — blocks, fees, and any address, straight from the chain.",
                 cta: "Open Blockchair",
                 accent: "from-primary/40 to-secondary/40",
               },
@@ -749,9 +718,9 @@ function Index() {
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { n: "1", t: "Connect a wallet", d: "Click Connect Wallet. Choose Solana (Phantom / Solflare / Backpack) or pay with Litecoin from any LTC wallet." },
-              { n: "2", t: "Choose amount & send", d: "Pick a tier, send SOL to the presale Solana address or LTC to the LTC address. Save your transaction hash — it's your proof of payment." },
-              { n: "3", t: "Verify & receive instantly", d: "Paste your tx hash and Solana address into the verifier. Once the payment is confirmed on-chain, the treasury sends your LTCme immediately — no waiting for launch." },
+              { n: "1", t: "Connect a Solana wallet", d: "Click Connect Wallet and connect Phantom, Solflare or Backpack on Solana mainnet." },
+              { n: "2", t: "Choose amount & send SOL", d: "Pick a tier and send that amount of SOL to the presale wallet. Every $1 buys 10,000 LTCME at the fixed $0.00010 presale price." },
+              { n: "3", t: "Confirm & receive", d: "Hit confirm with your Solana address. The app checks the transaction on Solana mainnet and, once confirmed, the presale wallet sends your LTCME automatically." },
             ].map((s) => (
               <div key={s.n} className="glass rounded-2xl p-6 relative">
                 <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-display font-black text-primary-foreground shadow-[0_0_20px_oklch(0.75_0.18_240)]">
@@ -773,7 +742,7 @@ function Index() {
               { i: Shield, t: "Audited", d: "SPL contract audits by two independent firms" },
               { i: Lock, t: "Liquidity Locked", d: "24-month on-chain time-lock, verifiable" },
               { i: Users, t: "Doxxed Team", d: "Core team KYC'd via a public verifier" },
-              { i: Zap, t: "Instant Delivery", d: "Verified payments trigger an immediate on-chain LTCme transfer" },
+              { i: Zap, t: "Automatic Delivery", d: "Confirmed SOL payments trigger an on-chain LTCME transfer from the presale wallet" },
             ].map((x) => (
               <div key={x.t}>
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mx-auto mb-3">
@@ -796,14 +765,14 @@ function Index() {
           </div>
           <div className="space-y-3">
             {[
-              { q: "How and when are tokens delivered?", a: "Immediately. All 1,000,000,000 LTCme SPL tokens are already minted on Solana and held in the treasury wallet Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy — verifiable on any Solana explorer. After you pay, paste your transaction hash into the verifier. Our backend confirms the payment landed in the treasury wallet, calculates your allocation at the live rate, and transfers LTCme to your Solana address within seconds. Delivery is automatic but not atomic, so always keep your tx hash — a payment can be re-verified at any time." },
-              { q: "Can I really pay with Litecoin?", a: "Yes. Send LTC to our LTC receive address (visible in the Buy modal and on the presale card). Once it has one confirmation, submit the tx hash plus the Solana address you want LTCme sent to — delivery happens right away." },
-              { q: "Why is the token on Solana if this is a Litecoin wallet?", a: "Solana offers sub-cent fees, near-instant finality, and a mature SPL ecosystem — perfect for a smooth presale and DEX launch. The wallet itself is Litecoin-native; LTCme lives on Solana as the utility & governance layer." },
+              { q: "How and when are tokens delivered?", a: "Automatically, as soon as your payment is confirmed. All 1,000,000,000 LTCME are already minted on Solana (mint 99Cxx8YokdjqwxoWq3NPgViqLtn7Kmt4KVTaKyYFPe7p) and 500,000,000 sit in the presale wallet Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC — verifiable on any Solana explorer. After you pay, hit confirm: the app checks the transaction on Solana mainnet, converts your SOL to USD, divides by the $0.00010 presale price, and sends that many LTCME to your Solana address." },
+              { q: "What exactly do I pay with?", a: "SOL on Solana mainnet only. LTCME is a Solana SPL token, so the presale runs entirely on Solana." },
+              { q: "Why is the token on Solana if this is a Litecoin wallet?", a: "Solana offers sub-cent fees, near-instant finality, and a mature SPL ecosystem — perfect for a smooth presale and DEX launch. The wallet itself is Litecoin-native, and LTCme.Click will ship a Litecoin ↔ Solana bridge so value moves between both chains inside the app." },
               { q: "Is the wallet custodial?", a: "No. LTCme.Click Wallet is fully non-custodial. Your seed phrase is generated and stored on your device. We can never access your funds." },
               { q: "Does the AI companion see my private keys?", a: "Never. Chomp operates on public on-chain data and your explicit prompts. Signature-requiring actions always require your device-level biometric confirmation." },
-              { q: "What if I miss the presale?", a: "LTCme will list on Raydium and Jupiter immediately after presale, followed by CEX listings. Presale price is the lowest guaranteed entry." },
-              { q: "Is there a minimum buy?", a: "Minimum is 0.05 SOL or 0.01 LTC. No maximum during the presale." },
-              { q: "How do I verify the dev wallet holds the supply?", a: "Look up our Solana dev wallet on any Solana explorer (Solscan, Solana.fm). The pre-minted LTCme balance is publicly visible. For LTC payments, our Litecoin receive wallet is auditable on the Litecoin Explorer linked in the Ecosystem section." },
+              { q: "What if I miss the presale?", a: "LTCME will list on Raydium and Jupiter immediately after presale, followed by CEX listings. $0.00010 is the presale price, not a market price — once a liquidity pool starts trading, the market sets the price." },
+              { q: "Is there a minimum buy?", a: "Minimum is 0.01 SOL. No maximum during the presale." },
+              { q: "How do I verify the presale wallet holds the supply?", a: "Look up the presale wallet and the LTCME mint on any Solana explorer (Solscan, Solana.fm). The 500,000,000 LTCME balance reserved for the presale is publicly visible." },
             ].map((f, i) => (
               <details key={i} className="glass rounded-2xl p-6 group">
                 <summary className="font-semibold cursor-pointer list-none flex justify-between items-center">
