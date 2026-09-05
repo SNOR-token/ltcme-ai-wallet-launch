@@ -43,21 +43,20 @@ export const Route = createFileRoute("/")({
 
 
 // Presale closes at a fixed moment — countdown ticks down to the second.
-const PRESALE_END = new Date("2026-08-06T00:00:00Z").getTime();
-const PRESALE_ALLOCATION = 1_000_000_000; // 1B tokens minted
-const SOLD = 412_800_000;
-const RAISED_SOL = 619;
-const TARGET_SOL = 1_500;
-const SOL_DEV_WALLET = "Hfc3YbDXNGmJCiLtoUizraZH46WonVpET7i25ioaZZgy";
-const LTC_DEV_WALLET = "ltc1qr9nuxcphqdhrjheqh8c8yh9254wfncd6j9zrk4";
+const PRESALE_END = new Date("2026-09-15T00:00:00Z").getTime();
+const TOTAL_SUPPLY = 1_000_000_000; // 1B LTCME minted on Solana
+const PRESALE_ALLOCATION = 500_000_000; // 50% reserved in the presale wallet
+const SOLD = 128_400_000;
+const TOKEN_MINT = "99Cxx8YokdjqwxoWq3NPgViqLtn7Kmt4KVTaKyYFPe7p";
+const SOL_DEV_WALLET = "Ew8mbrKwD6LGaSX28a6XGmXqeQSs2hykRibjXVhftTRC";
 
-// USD-anchored pricing so every tier maps cleanly to tokens.
-// 1 LTCme = $0.00002  →  $1 = 50,000 LTCme  ·  $100 = 5,000,000 LTCme
-const PRICE_USD_PER_TOKEN = 0.00002;
+// Presale price is fixed in USD: LTCME received = USD paid ÷ 0.00010
+const PRICE_USD_PER_TOKEN = 0.0001;
 const SOL_USD = 150; // reference price for on-page conversion
-const LTC_USD = 90;
-const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD; // ~1.33e-7
-const PRICE_LTC_PER_TOKEN = PRICE_USD_PER_TOKEN / LTC_USD; // ~2.22e-7
+const PRICE_SOL_PER_TOKEN = PRICE_USD_PER_TOKEN / SOL_USD;
+const HARD_CAP_USD = PRESALE_ALLOCATION * PRICE_USD_PER_TOKEN; // $50,000
+const FDV_USD = TOTAL_SUPPLY * PRICE_USD_PER_TOKEN; // $100,000 implied FDV
+const RAISED_USD = SOLD * PRICE_USD_PER_TOKEN;
 
 const PRICE_TIERS = [
   { usd: 1,   label: "Taster" },
@@ -83,8 +82,6 @@ function useCountdown(target: number) {
   };
 }
 
-type Chain = "SOL" | "LTC";
-
 declare global {
   interface Window {
     solana?: {
@@ -97,27 +94,23 @@ declare global {
 
 function WalletConnect() {
   const [open, setOpen] = useState(false);
-  const [chain, setChain] = useState<Chain>("SOL");
   const [address, setAddress] = useState<string | null>(null);
   const [usd, setUsd] = useState(10);
   const [status, setStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const receive = chain === "SOL" ? SOL_DEV_WALLET : LTC_DEV_WALLET;
-  const rate = chain === "SOL" ? PRICE_SOL_PER_TOKEN : PRICE_LTC_PER_TOKEN;
-  const chainUsd = chain === "SOL" ? SOL_USD : LTC_USD;
-  const chainAmount = usd / chainUsd;
+  const solAmount = usd / SOL_USD;
   const tokensOut = Math.floor(usd / PRICE_USD_PER_TOKEN);
 
   const connectPhantom = async () => {
     if (typeof window === "undefined" || !window.solana?.isPhantom) {
-      setStatus("Phantom not detected — install Phantom or use manual send below.");
+      setStatus("Phantom not detected — install Phantom, Solflare or Backpack to continue.");
       return;
     }
     try {
       const r = await window.solana.connect();
       setAddress(r.publicKey.toString());
-      setStatus("Wallet connected. Send your payment, then paste the transaction hash below — verification triggers an instant on-chain transfer of your LTCme.");
+      setStatus("Wallet connected. Send your SOL payment, then confirm it below — once the transaction is confirmed on Solana mainnet, your LTCME is sent automatically.");
     } catch {
       setStatus("Connection cancelled.");
     }
@@ -135,7 +128,7 @@ function WalletConnect() {
         onClick={() => setOpen(true)}
         className="w-full px-6 py-4 rounded-2xl font-bold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.6)] hover:scale-[1.02] transition inline-flex items-center justify-center gap-2 text-lg"
       >
-        <Link2 className="w-5 h-5" /> Connect Wallet & Buy LTCme
+        <Link2 className="w-5 h-5" /> Connect Wallet & Buy LTCME
       </button>
 
       {open && (
@@ -153,26 +146,12 @@ function WalletConnect() {
             >
               ✕
             </button>
-            <h3 className="font-display font-black text-2xl mb-1">Buy LTCme</h3>
+            <h3 className="font-display font-black text-2xl mb-1">Buy LTCME</h3>
             <p className="text-xs text-muted-foreground mb-5">
-              Pay in SOL or LTC, paste your transaction hash, and our verifier checks it on-chain. On success your LTCme is <span className="text-primary font-semibold">transferred instantly</span> from the token treasury — no waiting for launch. Crypto is volatile; only spend what you can afford to lose.
+              Pay in SOL on Solana mainnet, then confirm your transaction. The app checks it
+              on-chain and, once confirmed, the presale wallet sends your LTCME
+              <span className="text-primary font-semibold"> automatically</span> — no waiting for launch.
             </p>
-
-            <div className="grid grid-cols-2 gap-2 mb-5 p-1 glass rounded-xl">
-              {(["SOL", "LTC"] as Chain[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setChain(c)}
-                  className={`py-2 rounded-lg text-sm font-semibold transition ${
-                    chain === c
-                      ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {c === "SOL" ? "Solana" : "Litecoin"}
-                </button>
-              ))}
-            </div>
 
             <div className="mb-4">
               <div className="text-xs uppercase text-muted-foreground tracking-wider mb-2">Pick your bag (USD)</div>
@@ -190,7 +169,7 @@ function WalletConnect() {
                     <div className="font-display font-black text-lg">${t.usd}</div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
                     <div className="text-[11px] font-mono text-primary mt-1">
-                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCme
+                      {Math.floor(t.usd / PRICE_USD_PER_TOKEN).toLocaleString()} LTCME
                     </div>
                   </button>
                 ))}
@@ -201,45 +180,37 @@ function WalletConnect() {
               <div className="glass rounded-xl p-3 flex justify-between items-center">
                 <div>
                   <div className="text-xs uppercase text-muted-foreground">You pay</div>
-                  <div className="font-mono font-bold text-lg">
-                    {chainAmount.toFixed(chain === "SOL" ? 4 : 5)} {chain}
-                  </div>
+                  <div className="font-mono font-bold text-lg">{solAmount.toFixed(4)} SOL</div>
                   <div className="text-[11px] text-muted-foreground">≈ ${usd.toFixed(2)} USD</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-muted-foreground text-right">You receive</div>
                   <div className="font-mono font-bold text-xl text-gradient text-right">
-                    {tokensOut.toLocaleString()} LTCme
+                    {tokensOut.toLocaleString()} LTCME
                   </div>
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground text-center font-mono">
-                Rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 {chain} ≈ {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })} LTCme
+                Presale price: 1 LTCME = ${PRICE_USD_PER_TOKEN.toFixed(5)} · 1 SOL ≈ {Math.floor(1 / PRICE_SOL_PER_TOKEN).toLocaleString()} LTCME
               </div>
             </div>
 
-            {chain === "SOL" ? (
-              <button
-                onClick={connectPhantom}
-                className="w-full px-5 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground mb-3 inline-flex items-center justify-center gap-2"
-              >
-                <Wallet className="w-4 h-4" />
-                {address ? `Connected: ${address.slice(0, 4)}…${address.slice(-4)}` : "Connect Phantom"}
-              </button>
-            ) : (
-              <div className="text-xs text-muted-foreground mb-3">
-                Send from any Litecoin wallet (Litewallet, Exodus, Ledger). Once the payment has one confirmation, paste the tx hash below with your Solana address — tokens are sent to you immediately after verification.
-              </div>
-            )}
+            <button
+              onClick={connectPhantom}
+              className="w-full px-5 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground mb-3 inline-flex items-center justify-center gap-2"
+            >
+              <Wallet className="w-4 h-4" />
+              {address ? `Connected: ${address.slice(0, 4)}…${address.slice(-4)}` : "Connect Phantom"}
+            </button>
 
             <div className="glass rounded-xl p-3 mb-3">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
-                {chain === "SOL" ? "Solana receive address" : "Litecoin receive address"}
+                Solana presale receive address
               </div>
               <div className="flex items-center gap-2">
-                <div className="font-mono text-xs truncate flex-1">{receive}</div>
+                <div className="font-mono text-xs truncate flex-1">{SOL_DEV_WALLET}</div>
                 <button
-                  onClick={() => copy(receive, "recv")}
+                  onClick={() => copy(SOL_DEV_WALLET, "recv")}
                   className="px-2 py-1 rounded-md bg-primary/20 text-primary text-xs inline-flex items-center gap-1"
                 >
                   <Copy className="w-3 h-3" /> {copied === "recv" ? "Copied" : "Copy"}
@@ -253,12 +224,8 @@ function WalletConnect() {
               </div>
             )}
 
-            <div className="mb-3">
+            <div className="mb-1">
               <PaymentVerifier defaultRecipient={address ?? ""} compact />
-            </div>
-
-            <div className="text-[11px] text-muted-foreground leading-relaxed">
-              ⚠️ <span className="text-foreground font-semibold">Risk disclosure:</span> Payment and delivery are two separate on-chain steps: you send funds, our verifier confirms the transaction, then the treasury sends your LTCme automatically. There is no atomic escrow contract, so always keep your tx hash. Only send what you can afford to lose.
             </div>
           </div>
         </div>
@@ -311,7 +278,7 @@ function Index() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              Presale Live · SOL + LTC accepted
+              Presale Live · Solana Mainnet · SOL accepted
             </div>
             <h1 className="text-5xl md:text-7xl font-display font-black leading-[1.02] mb-6">
               <span className="text-gradient">LTCme.Click</span><br />
@@ -322,7 +289,9 @@ function Index() {
             </p>
             <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
               An AI-driven Litecoin wallet with a light-blue pacman AI companion guiding every move.
-              1,000,000,000 <span className="text-primary font-semibold">LTCme</span> tokens already minted on Solana — pay with SOL or LTC and get your tokens instantly on payment verification, no waiting for launch.
+              1,000,000,000 <span className="text-primary font-semibold">LTCME</span> minted on Solana, with
+              500,000,000 (50%) held in a dedicated presale wallet. Pay in SOL, your transaction is confirmed
+              on Solana mainnet, and your tokens are sent automatically — no waiting for launch.
             </p>
             <div className="flex flex-wrap gap-4">
               <a href="#presale" className="px-6 py-3.5 rounded-full font-semibold bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-[0_0_40px_oklch(0.65_0.25_295/0.5)] hover:scale-105 transition">
@@ -334,9 +303,9 @@ function Index() {
             </div>
             <div className="mt-10 grid grid-cols-3 gap-6 max-w-md">
               {[
-                { v: "1B", l: "Tokens minted" },
-                { v: "SOL+LTC", l: "Accepted" },
-                { v: "Instant", l: "Delivery" },
+                { v: "1B", l: "Total supply" },
+                { v: "500M", l: "Presale reserved" },
+                { v: "$0.00010", l: "Presale price" },
               ].map((x) => (
                 <div key={x.l}>
                   <div className="text-2xl font-display font-bold text-gradient">{x.v}</div>
