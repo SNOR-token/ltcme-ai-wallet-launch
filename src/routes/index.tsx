@@ -332,10 +332,10 @@ function Index() {
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <Rocket className="w-5 h-5 text-primary" />
-              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCme Presale · Instant Delivery</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-primary">Live · LTCME Presale · Solana Mainnet</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-display font-black mb-2">Ends in</h2>
-            <p className="text-sm text-muted-foreground mb-8">Tokens are already minted and held in the treasury wallet. Verify your payment and LTCme lands in your wallet within seconds — no waiting for launch.</p>
+            <p className="text-sm text-muted-foreground mb-8">500,000,000 LTCME — half the total supply — is already minted and sitting in the dedicated presale wallet. Pay in SOL, confirm your transaction, and your tokens are sent from that wallet automatically once Solana confirms it.</p>
 
             <div className="grid grid-cols-4 gap-3 md:gap-6 mb-10">
               {[
@@ -353,8 +353,8 @@ function Index() {
 
             <div className="mb-6">
               <div className="flex justify-between text-sm mb-2 font-mono">
-                <span className="text-muted-foreground">Sold: <span className="text-primary font-semibold">{SOLD.toLocaleString()} LTCme</span></span>
-                <span className="text-muted-foreground">Supply: {PRESALE_ALLOCATION.toLocaleString()} LTCme</span>
+                <span className="text-muted-foreground">Sold: <span className="text-primary font-semibold">{SOLD.toLocaleString()} LTCME</span></span>
+                <span className="text-muted-foreground">Presale allocation: {PRESALE_ALLOCATION.toLocaleString()} LTCME</span>
               </div>
               <div className="h-4 rounded-full bg-muted/50 overflow-hidden relative">
                 <div className="h-full bg-gradient-to-r from-primary via-accent to-secondary relative"
@@ -364,12 +364,12 @@ function Index() {
               </div>
               <div className="flex justify-between text-xs mt-2 text-muted-foreground">
                 <span>{soldPct.toFixed(1)}% filled</span>
-                <span>{RAISED_SOL.toLocaleString()} / {TARGET_SOL.toLocaleString()} SOL raised</span>
+                <span>${RAISED_USD.toLocaleString()} / ${HARD_CAP_USD.toLocaleString()} raised</span>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL or LTC</div>
+              <div className="text-xs uppercase text-muted-foreground tracking-widest mb-3 text-center">Presale price tiers · pay in SOL</div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {PRICE_TIERS.map((t) => {
                   const tokens = Math.floor(t.usd / PRICE_USD_PER_TOKEN);
@@ -378,16 +378,16 @@ function Index() {
                        className="glass rounded-xl p-3 text-center hover:border-primary/60 transition group">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
                       <div className="font-display font-black text-2xl text-gradient">${t.usd}</div>
-                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCme</div>
+                      <div className="text-xs font-mono text-primary mt-1">{(tokens / 1000).toLocaleString()}K LTCME</div>
                       <div className="text-[10px] text-muted-foreground mt-1 font-mono">
-                        {(t.usd / SOL_USD).toFixed(4)} SOL · {(t.usd / LTC_USD).toFixed(4)} LTC
+                        {(t.usd / SOL_USD).toFixed(4)} SOL
                       </div>
                     </a>
                   );
                 })}
               </div>
               <div className="text-center text-xs text-muted-foreground mt-3 font-mono">
-                Fixed rate: 1 LTCme = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · every dollar always maps to the same token count
+                Presale price: 1 LTCME = ${PRICE_USD_PER_TOKEN.toFixed(5)} USD · LTCME received = USD paid ÷ 0.00010
               </div>
             </div>
 
@@ -403,12 +403,12 @@ function Index() {
                 <div className="font-mono truncate">{SOL_DEV_WALLET}</div>
               </div>
               <div className="glass rounded-xl p-3 text-xs">
-                <div className="uppercase text-muted-foreground tracking-widest mb-1">LTC receive wallet</div>
-                <div className="font-mono truncate">{LTC_DEV_WALLET}</div>
+                <div className="uppercase text-muted-foreground tracking-widest mb-1">LTCME token mint (Solana)</div>
+                <div className="font-mono truncate">{TOKEN_MINT}</div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              ⚠️ Delivery is automated but not atomic: you pay, our backend verifier confirms the transaction on-chain, then the treasury wallet transfers your LTCme to the Solana address you provide. Keep your tx hash — it is your proof of payment and can be re-verified at any time. Only participate with funds you can afford to lose.
+              How it works: send SOL to the presale wallet, then hit confirm. The app checks the transaction on Solana mainnet and, once confirmed, the presale wallet sends {`${(1 / PRICE_USD_PER_TOKEN).toLocaleString()}`} LTCME per $1 paid straight to your Solana address.
             </p>
           </div>
         </div>
